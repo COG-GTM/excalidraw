@@ -1,0 +1,72 @@
+.excalidraw {
+  --TemplatesDialog-card-border: #d6d6d6;
+  --TemplatesDialog-card-bg: #ffffff;
+  --TemplatesDialog-preview-bg: #f5f5f9;
+  --TemplatesDialog-description-color: var(--color-gray-60);
+
+  &.theme--dark {
+    --TemplatesDialog-card-border: #5c5c5c;
+    --TemplatesDialog-card-bg: #232329;
+    --TemplatesDialog-preview-bg: #1a1a1f;
+    --TemplatesDialog-description-color: var(--color-gray-40);
+  }
+
+  .TemplatesDialog {
+    user-select: none;
+
+    &__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    &__card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+
+      padding: 0.75rem;
+      margin: 0;
+
+      text-align: left;
+      font-family: inherit;
+      color: var(--text-primary-color);
+      background-color: var(--TemplatesDialog-card-bg);
+      border: 1px solid var(--TemplatesDialog-card-border);
+      border-radius: 12px;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--color-primary);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--focus-highlight-color);
+        outline-offset: 2px;
+      }
+
+      &__name {
+        font-weight: 700;
+        font-size: 1rem;
+        line-height: 140%;
+      }
+
+      &__description {
+        font-size: 0.875rem;
+        line-height: 140%;
+        color: var(--TemplatesDialog-description-color);
+      }
+    }
+
+    &__preview {
+      width: 100%;
+      height: 120px;
+      padding: 0.5rem;
+      box-sizing: border-box;
+      color: var(--color-primary);
+      background-color: var(--TemplatesDialog-preview-bg);
+      border-radius: 8px;
+    }
+  }
+}

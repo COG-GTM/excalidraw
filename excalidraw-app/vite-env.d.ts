@@ -38,6 +38,10 @@ interface ImportMetaEnv {
 
   VITE_APP_GIT_SHA: string;
 
+  // welcome-screen splash variant: "templates" | "ai" | "launcher".
+  // unset or unknown renders the default welcome screen.
+  VITE_APP_SPLASH_VARIANT: string;
+
   MODE: string;
 
   DEV: string;
@@ -46,4 +50,9 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+declare module "*.excalidraw?raw" {
+  const content: string;
+  export default content;
 }

@@ -142,6 +142,7 @@ import DebugCanvas, {
 } from "./components/DebugCanvas";
 import { useSimulatedCollaborators } from "./debugCollaborators";
 import { AIComponents } from "./components/AI";
+import { getSplashVariant } from "./components/splash/splashVariant";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 
 import "./index.scss";
@@ -171,6 +172,8 @@ declare global {
 }
 
 let pwaEvent: BeforeInstallPromptEvent | null = null;
+
+const splashVariant = getSplashVariant();
 
 // Adding a listener outside of the component as it may (?) need to be
 // subscribed early to catch the event.
@@ -1037,6 +1040,8 @@ const ExcalidrawWrapper = () => {
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
           isCollabEnabled={!isCollabDisabled}
+          splashVariant={splashVariant}
+          excalidrawAPI={excalidrawAPI}
         />
         <OverwriteConfirmDialog>
           <OverwriteConfirmDialog.Actions.ExportToImage />

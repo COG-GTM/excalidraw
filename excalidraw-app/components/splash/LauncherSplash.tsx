@@ -4,7 +4,10 @@ import {
   getCommonBounds,
   loadSceneOrLibraryFromBlob,
 } from "@excalidraw/excalidraw";
-import { useExcalidrawSetAppState } from "@excalidraw/excalidraw/components/App";
+import {
+  useAppProps,
+  useExcalidrawSetAppState,
+} from "@excalidraw/excalidraw/components/App";
 import {
   ArrowRightIcon,
   LoadIcon,
@@ -12,7 +15,7 @@ import {
 import { chatHistoryAtom } from "@excalidraw/excalidraw/components/TTDDialog/TTDContext";
 import { useSetAtom } from "@excalidraw/excalidraw/editor-jotai";
 import clsx from "clsx";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
@@ -55,6 +58,7 @@ export const LauncherSplash = ({
 }: {
   excalidrawAPI: ExcalidrawImperativeAPI | null;
 }) => {
+  const appProps = useAppProps();
   const setAppState = useExcalidrawSetAppState();
   const setChatHistory = useSetAtom(chatHistoryAtom);
 
@@ -64,8 +68,16 @@ export const LauncherSplash = ({
   const [isImporting, setIsImporting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
 
-  const aiEnabled = isAIEnabled();
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const aiEnabled = isAIEnabled() && appProps.aiEnabled !== false;
   const disabled = !excalidrawAPI || isImporting;
 
   const loadTemplate = useCallback(
@@ -103,6 +115,10 @@ export const LauncherSplash = ({
         if (result.type !== MIME_TYPES.excalidraw) {
           throw new Error("Not a scene file");
         }
+        // don't clobber a canvas the user started drawing on while parsing
+        if (!isMountedRef.current || excalidrawAPI.getSceneElements().length) {
+          return;
+        }
         const { elements, appState, files } = result.data;
         excalidrawAPI.updateScene({
           elements,
@@ -127,7 +143,9 @@ export const LauncherSplash = ({
           text: `Couldn't open "${file.name}" — drop a valid .excalidraw file.`,
         });
       } finally {
-        setIsImporting(false);
+        if (isMountedRef.current) {
+          setIsImporting(false);
+        }
       }
     },
     [excalidrawAPI],
@@ -183,7 +201,12 @@ export const LauncherSplash = ({
 
   const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
     const next = event.relatedTarget;
-    if (next instanceof Node && event.currentTarget.contains(next)) {
+    const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+    if (
+      ownerWindow &&
+      next instanceof ownerWindow.Node &&
+      event.currentTarget.contains(next)
+    ) {
       return;
     }
     setIsDragOver(false);

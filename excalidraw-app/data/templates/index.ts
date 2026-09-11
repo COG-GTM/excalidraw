@@ -66,6 +66,25 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
   },
 ];
 
+const tokenize = (text: string) =>
+  text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+
+/** true when `keyword` appears in `words` as a whole word (or whole-word phrase) */
+const hasKeyword = (words: readonly string[], keyword: string) => {
+  const parts = tokenize(keyword);
+  if (!parts.length || parts.length > words.length) {
+    return false;
+  }
+  return words.some((_, i) => parts.every((part, j) => words[i + j] === part));
+};
+
+/**
+ * Matches a template by exact id / name, or by any keyword appearing as a
+ * whole word in the query ("overflow" does not match "flow").
+ */
 export const findTemplateByKeyword = (
   query: string,
 ): StarterTemplate | null => {
@@ -73,12 +92,13 @@ export const findTemplateByKeyword = (
   if (!q) {
     return null;
   }
+  const words = tokenize(q);
   return (
     STARTER_TEMPLATES.find(
       (template) =>
         template.id === q ||
         template.name.toLowerCase() === q ||
-        template.keywords.some((keyword) => q.includes(keyword)),
+        template.keywords.some((keyword) => hasKeyword(words, keyword)),
     ) ?? null
   );
 };

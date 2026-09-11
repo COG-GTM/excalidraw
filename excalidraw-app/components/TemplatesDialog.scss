@@ -1,0 +1,61 @@
+.excalidraw {
+  .TemplatesDialog {
+    user-select: none;
+
+    .TemplatesDialog__intro {
+      margin: 0 0 1rem;
+      font-size: 0.875rem;
+      color: var(--color-gray-60);
+    }
+
+    .TemplatesDialog__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .TemplatesDialog__card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      text-align: left;
+      cursor: pointer;
+      background-color: var(--island-bg-color);
+      border: 1px solid var(--default-border-color);
+      border-radius: var(--border-radius-lg);
+      color: inherit;
+      font-family: inherit;
+
+      &:hover {
+        background-color: var(--button-hover-bg);
+        border-color: var(--color-primary);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--focus-highlight-color);
+        outline-offset: 1px;
+      }
+    }
+
+    .TemplatesDialog__preview {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      border-radius: var(--border-radius-md);
+      background-color: var(--default-bg-color);
+      color: var(--color-primary);
+    }
+
+    .TemplatesDialog__name {
+      font-size: 0.9375rem;
+      font-weight: 700;
+    }
+
+    .TemplatesDialog__description {
+      font-size: 0.8125rem;
+      line-height: 1.3;
+      color: var(--color-gray-60);
+    }
+  }
+}

@@ -4,12 +4,24 @@ import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { WelcomeScreen } from "@excalidraw/excalidraw/index";
 import React from "react";
 
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
 import { isExcalidrawPlusSignedUser } from "../app_constants";
+
+import { AISplash } from "./splash/AISplash";
+import { LauncherSplash } from "./splash/LauncherSplash";
+import { TemplatesSplash } from "./splash/TemplatesSplash";
+
+import type { SplashVariant } from "./splash/splashVariant";
 
 export const AppWelcomeScreen: React.FC<{
   onCollabDialogOpen: () => any;
   isCollabEnabled: boolean;
+  /** `null` renders the default welcome screen */
+  splashVariant: SplashVariant | null;
+  excalidrawAPI: ExcalidrawImperativeAPI | null;
 }> = React.memo((props) => {
+  const { splashVariant, excalidrawAPI } = props;
   const { t } = useI18n();
   let headingContent;
 
@@ -56,7 +68,14 @@ export const AppWelcomeScreen: React.FC<{
         <WelcomeScreen.Center.Heading>
           {headingContent}
         </WelcomeScreen.Center.Heading>
+        {splashVariant === "launcher" && (
+          <LauncherSplash excalidrawAPI={excalidrawAPI} />
+        )}
         <WelcomeScreen.Center.Menu>
+          {splashVariant === "templates" && (
+            <TemplatesSplash excalidrawAPI={excalidrawAPI} />
+          )}
+          {splashVariant === "ai" && <AISplash excalidrawAPI={excalidrawAPI} />}
           <WelcomeScreen.Center.MenuItemLoadScene />
           <WelcomeScreen.Center.MenuItemHelp />
           {props.isCollabEnabled && (

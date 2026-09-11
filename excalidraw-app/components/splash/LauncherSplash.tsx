@@ -77,6 +77,7 @@ export const LauncherSplash: React.FC<{
     excalidrawAPI.updateScene({
       elements,
       appState: {
+        fileHandle: appState?.fileHandle ?? null,
         viewBackgroundColor:
           appState?.viewBackgroundColor ?? localAppState.viewBackgroundColor,
         gridSize: appState?.gridSize ?? localAppState.gridSize,

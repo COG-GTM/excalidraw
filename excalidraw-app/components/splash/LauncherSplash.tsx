@@ -210,6 +210,10 @@ export const LauncherSplash: React.FC<{
         return;
       }
 
+      if (!excalidrawAPI || excalidrawAPI.getSceneElements().length) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
       importSceneFile(file);
@@ -220,7 +224,7 @@ export const LauncherSplash: React.FC<{
     return () => {
       document.removeEventListener("paste", onPaste, true);
     };
-  }, [importSceneFile]);
+  }, [excalidrawAPI, importSceneFile]);
 
   return (
     <div

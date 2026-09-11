@@ -1,0 +1,97 @@
+@use "../../packages/excalidraw/css/variables.module" as *;
+
+.excalidraw {
+  --TemplatesDialog-card-border: #d6d6d6;
+
+  &.theme--dark {
+    --TemplatesDialog-card-border: #5c5c5c;
+  }
+
+  .TemplatesDialog {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    user-select: none;
+
+    &__header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      & h3 {
+        font-family: "Assistant";
+        font-style: normal;
+        font-weight: 700;
+        font-size: 1.313rem;
+        line-height: 130%;
+        padding: 0;
+        margin: 0;
+      }
+
+      & p {
+        margin: 0;
+        font-family: "Assistant";
+        font-size: 0.875rem;
+        color: var(--color-gray-60);
+      }
+    }
+
+    &__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+
+      @include isMobile {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &__card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      padding: 0.75rem;
+      margin: 0;
+
+      cursor: pointer;
+      text-align: left;
+
+      background-color: var(--island-bg-color);
+      border: 1px solid var(--TemplatesDialog-card-border);
+      border-radius: 12px;
+
+      &:hover {
+        background-color: var(--button-hover-bg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--focus-highlight-color);
+        outline-offset: 2px;
+      }
+
+      &__preview {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        background-color: var(--default-bg-color);
+      }
+
+      &__name {
+        font-family: "Assistant";
+        font-weight: 600;
+        font-size: 1rem;
+        line-height: 130%;
+      }
+
+      &__description {
+        font-family: "Assistant";
+        font-size: 0.815rem;
+        line-height: 130%;
+        color: var(--color-gray-60);
+      }
+    }
+  }
+}

@@ -101,7 +101,11 @@ export const LauncherSplash: React.FC<{
           excalidrawAPI.getSceneElements(),
         );
 
-        if (!isMountedRef.current || contents.type !== MIME_TYPES.excalidraw) {
+        if (
+          !isMountedRef.current ||
+          contents.type !== MIME_TYPES.excalidraw ||
+          excalidrawAPI.getSceneElements().length
+        ) {
           return;
         }
 

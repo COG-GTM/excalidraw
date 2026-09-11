@@ -1,14 +1,40 @@
+import { gridIcon } from "@excalidraw/excalidraw/components/icons";
+import { WelcomeScreen } from "@excalidraw/excalidraw/index";
+import { useState } from "react";
+
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
+import { TemplatesDialog } from "../TemplatesDialog";
 
 /**
  * Variant A (`VITE_APP_SPLASH_VARIANT=templates`).
  *
- * Rendered inside `WelcomeScreen.Center.Menu`; should render a
+ * Rendered inside `WelcomeScreen.Center.Menu`; renders a
  * `WelcomeScreen.Center.MenuItem` that opens the templates dialog.
  */
-export const TemplatesSplash = (_props: {
+export const TemplatesSplash = ({
+  excalidrawAPI,
+}: {
   excalidrawAPI: ExcalidrawImperativeAPI | null;
 }) => {
-  return null;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  return (
+    <>
+      <WelcomeScreen.Center.MenuItem
+        onSelect={() => setIsDialogOpen(true)}
+        shortcut={null}
+        icon={gridIcon}
+      >
+        Start from a template
+      </WelcomeScreen.Center.MenuItem>
+      {isDialogOpen && (
+        <TemplatesDialog
+          excalidrawAPI={excalidrawAPI}
+          onClose={() => setIsDialogOpen(false)}
+        />
+      )}
+    </>
+  );
 };
 TemplatesSplash.displayName = "TemplatesSplash";

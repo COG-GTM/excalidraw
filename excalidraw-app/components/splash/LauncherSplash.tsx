@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type {
+  AppState,
   BinaryFiles,
   ExcalidrawImperativeAPI,
 } from "@excalidraw/excalidraw/types";
@@ -71,14 +72,29 @@ export const LauncherSplash = ({
   const aiEnabled = isAIEnabled() && appProps.aiEnabled !== false;
 
   const loadScene = useCallback(
-    (elements: readonly ExcalidrawElement[], files: BinaryFiles) => {
+    (
+      elements: readonly ExcalidrawElement[],
+      files: BinaryFiles,
+      appState?: Partial<AppState> | null,
+    ) => {
       if (!excalidrawAPI) {
         return;
       }
 
+      // scene-level settings saved with the file, falling back to the current
+      // (empty) canvas
+      const current = excalidrawAPI.getAppState();
+
       excalidrawAPI.updateScene({
         elements,
-        appState: { selectedElementIds: {} },
+        appState: {
+          viewBackgroundColor:
+            appState?.viewBackgroundColor ?? current.viewBackgroundColor,
+          gridSize: appState?.gridSize ?? current.gridSize,
+          gridStep: appState?.gridStep ?? current.gridStep,
+          gridModeEnabled: appState?.gridModeEnabled ?? current.gridModeEnabled,
+          selectedElementIds: {},
+        },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
       excalidrawAPI.addFiles(Object.values(files));
@@ -116,8 +132,8 @@ export const LauncherSplash = ({
           return;
         }
 
-        const { elements, files } = contents.data;
-        loadScene(elements, files);
+        const { elements, files, appState } = contents.data;
+        loadScene(elements, files, appState);
       } catch (error: any) {
         if (isMountedRef.current) {
           setHint("Couldn't read that file. Is it a valid .excalidraw scene?");
@@ -187,15 +203,19 @@ export const LauncherSplash = ({
         }
       }}
       onDrop={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
         dragCounterRef.current = 0;
         setIsDraggedOver(false);
 
+        // let anything that isn't a scene (images, …) reach the editor's own
+        // drop handler
         const file = event.dataTransfer.files[0];
-        if (file) {
-          importFile(file);
+        if (!file || !isExcalidrawFile(file)) {
+          return;
         }
+
+        event.preventDefault();
+        event.stopPropagation();
+        importFile(file);
       }}
       onPaste={(event) => {
         const file = event.clipboardData.files[0];

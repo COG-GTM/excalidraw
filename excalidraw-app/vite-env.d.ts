@@ -15,6 +15,10 @@ interface ImportMetaEnv {
   VITE_APP_PORTAL_URL: string;
   VITE_APP_AI_BACKEND: string;
 
+  // empty-canvas welcome-screen splash variant:
+  // "templates" | "ai" | "launcher"; unset renders the default welcome screen
+  VITE_APP_SPLASH_VARIANT: string;
+
   VITE_APP_FIREBASE_CONFIG: string;
 
   // whether to disable live reload / HMR. Usuaully what you want to do when
@@ -46,4 +50,9 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+declare module "*.excalidraw?raw" {
+  const content: string;
+  export default content;
 }

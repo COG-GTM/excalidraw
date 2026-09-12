@@ -1,0 +1,80 @@
+@import "../../packages/excalidraw/css/variables.module.scss";
+
+.excalidraw {
+  .TemplatesDialog {
+    &__hint {
+      margin: 0 0 1rem;
+      color: var(--color-gray-60);
+      font-size: 0.875rem;
+    }
+
+    &__grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+
+      @include isMobile {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+      }
+    }
+
+    &__card {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      text-align: left;
+      font-family: inherit;
+      color: var(--text-primary-color);
+      background: var(--island-bg-color);
+      border: 1px solid var(--default-border-color);
+      border-radius: var(--border-radius-lg);
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover,
+      &:focus-visible {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 1px var(--color-primary);
+        outline: none;
+      }
+
+      &:active {
+        background: var(--color-primary-light);
+      }
+    }
+
+    &__preview {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--color-gray-10);
+      border-radius: var(--border-radius-md);
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &__card-name {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    &__card-description {
+      font-size: 0.8125rem;
+      color: var(--color-gray-60);
+    }
+
+    &__actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+  }
+
+  &.theme--dark .TemplatesDialog__preview {
+    background: var(--color-gray-90);
+  }
+}

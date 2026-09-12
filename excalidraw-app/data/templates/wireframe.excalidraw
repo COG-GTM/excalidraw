@@ -204,12 +204,7 @@
       "version": 1,
       "versionNonce": 1311144361,
       "isDeleted": false,
-      "boundElements": [
-        {
-          "id": "text-115",
-          "type": "text"
-        }
-      ],
+      "boundElements": null,
       "updated": 1,
       "link": null,
       "locked": false

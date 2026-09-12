@@ -83,6 +83,16 @@ export const parseTemplateElements = (
   );
 };
 
+export const parseTemplateBackgroundColor = (
+  template: StarterTemplate,
+): string | null => {
+  const data = JSON.parse(template.source) as {
+    appState?: { viewBackgroundColor?: unknown };
+  };
+  const color = data.appState?.viewBackgroundColor;
+  return typeof color === "string" && color ? color : null;
+};
+
 const tokenize = (value: string): string[] =>
   value
     .toLowerCase()
@@ -131,8 +141,12 @@ export const loadTemplateIntoScene = (
   template: StarterTemplate,
 ) => {
   const elements = parseTemplateElements(template);
+  const viewBackgroundColor =
+    parseTemplateBackgroundColor(template) ??
+    excalidrawAPI.getAppState().viewBackgroundColor;
   excalidrawAPI.updateScene({
     elements,
+    appState: { viewBackgroundColor },
     captureUpdate: CaptureUpdateAction.IMMEDIATELY,
   });
   if (elements.length) {

@@ -114,9 +114,30 @@ export const LauncherSplash: React.FC<{
     if (!ownerDocument) {
       return;
     }
+    const isPasteForLauncher = (event: ClipboardEvent) => {
+      const container = containerRef.current;
+      const win = ownerDocument.defaultView;
+      const target = event.target;
+      if (!container || !win || !(target instanceof win.Node)) {
+        return false;
+      }
+      if (container.contains(target)) {
+        return true;
+      }
+      // outside the launcher only claim "canvas-level" pastes: nothing
+      // editable focused and no dialog/overlay open
+      const active = ownerDocument.activeElement;
+      const activeIsEditable =
+        active instanceof win.HTMLElement &&
+        (active.isContentEditable ||
+          /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+      return (
+        !activeIsEditable && excalidrawAPI?.getAppState().openDialog == null
+      );
+    };
     const onPaste = (event: ClipboardEvent) => {
       const file = event.clipboardData?.files[0];
-      if (file && isExcalidrawFile(file)) {
+      if (file && isExcalidrawFile(file) && isPasteForLauncher(event)) {
         event.preventDefault();
         event.stopPropagation();
         importFile(file);
@@ -126,7 +147,7 @@ export const LauncherSplash: React.FC<{
     return () => {
       ownerDocument.removeEventListener("paste", onPaste, true);
     };
-  }, [importFile]);
+  }, [importFile, excalidrawAPI]);
 
   const onSubmit = () => {
     if (!excalidrawAPI) {

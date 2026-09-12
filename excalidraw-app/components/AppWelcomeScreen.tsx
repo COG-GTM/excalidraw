@@ -2,15 +2,31 @@ import { loginIcon } from "@excalidraw/excalidraw/components/icons";
 import { POINTER_EVENTS } from "@excalidraw/common";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { WelcomeScreen } from "@excalidraw/excalidraw/index";
+import { useExcalidrawAppState } from "@excalidraw/excalidraw/components/App";
 import React from "react";
 
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
 import { isExcalidrawPlusSignedUser } from "../app_constants";
+
+import { AISplash } from "./splash/AISplash";
+import { LauncherSplash } from "./splash/LauncherSplash";
+import { TemplatesSplash } from "./splash/TemplatesSplash";
+
+import type { SplashVariant } from "./splash/splashVariant";
 
 export const AppWelcomeScreen: React.FC<{
   onCollabDialogOpen: () => any;
   isCollabEnabled: boolean;
+  splashVariant?: SplashVariant | null;
+  excalidrawAPI?: ExcalidrawImperativeAPI | null;
 }> = React.memo((props) => {
   const { t } = useI18n();
+  const { viewModeEnabled } = useExcalidrawAppState();
+  // splashes mutate the scene through the imperative API and bypass the
+  // action-level view-mode gates, so never render them in view mode
+  const splash = viewModeEnabled ? null : props.splashVariant ?? null;
+  const excalidrawAPI = props.excalidrawAPI ?? null;
   let headingContent;
 
   if (isExcalidrawPlusSignedUser) {
@@ -56,7 +72,14 @@ export const AppWelcomeScreen: React.FC<{
         <WelcomeScreen.Center.Heading>
           {headingContent}
         </WelcomeScreen.Center.Heading>
+        {splash === "launcher" && (
+          <LauncherSplash excalidrawAPI={excalidrawAPI} />
+        )}
         <WelcomeScreen.Center.Menu>
+          {splash === "templates" && (
+            <TemplatesSplash excalidrawAPI={excalidrawAPI} />
+          )}
+          {splash === "ai" && <AISplash excalidrawAPI={excalidrawAPI} />}
           <WelcomeScreen.Center.MenuItemLoadScene />
           <WelcomeScreen.Center.MenuItemHelp />
           {props.isCollabEnabled && (

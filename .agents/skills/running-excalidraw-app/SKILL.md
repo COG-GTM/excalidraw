@@ -25,7 +25,7 @@ description: How to run, switch and browser-test the excalidraw.com app (excalid
 
 ## AI features
 
-- `VITE_APP_AI_BACKEND` (set to `http://localhost:3016` in `.env.development`) enables the AI UI, but nothing listens there by default, so text-to-diagram fails until a backend is running. To test locally without a real backend, run a small Node HTTP server on port 3016 that answers `POST /v1/ai/text-to-diagram/chat-streaming` with SSE: `data: {"type":"content","delta":"..."}` chunks spelling out Mermaid, then `data: {"type":"done","finishReason":"stop"}` and `data: [DONE]`. Whenever such a mock backs a demo or recording, say so — it is not evidence of real AI behaviour.
+- `VITE_APP_AI_BACKEND` (set to `http://localhost:3016` in `.env.development`) enables the AI UI, but nothing listens there by default, so text-to-diagram fails until a backend is running. To test locally without a real backend, run a small Node HTTP server on port 3016 that answers `POST /v1/ai/text-to-diagram/chat-streaming` with SSE: `data: {"type":"content","delta":"..."}` chunks spelling out Mermaid, then `data: {"type":"done","finishReason":"stop"}` and `data: [DONE]`. The request is cross-origin (app on `:300x`, mock on `:3016`) with a JSON body, so the mock must also answer the `OPTIONS` preflight with `204` and send `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: POST, OPTIONS` and `Access-Control-Allow-Headers: Content-Type, Accept, Authorization` on both the preflight and the streaming response, otherwise the browser never delivers the POST. Whenever such a mock backs a demo or recording, say so — it is not evidence of real AI behaviour.
 
 ## Browser testing notes
 

@@ -16,7 +16,7 @@ import { isAIEnabled } from "./splashVariant";
 
 import "./AISplash.scss";
 
-const PROMPT_PLACEHOLDER = "Describe a diagram… e.g. login flow with 2FA";
+const PROMPT_PLACEHOLDER = "Describe a diagram, e.g. login flow with 2FA";
 
 export const AISplash = ({
   excalidrawAPI,

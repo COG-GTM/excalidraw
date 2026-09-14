@@ -12,7 +12,7 @@ description: How to run, switch and browser-test the excalidraw.com app (excalid
 ## Starting the dev server
 - The port comes from `VITE_APP_PORT`, **not** `PORT`:
   `cd excalidraw-app && VITE_APP_PORT=3000 yarn -s vite --strictPort` (or `VITE_APP_PORT=3000 yarn start` from the repo root).
-- Build-time flags are read from `.env.development`; override on the command line, e.g. `VITE_APP_SPLASH_VARIANT=templates VITE_APP_PORT=3001 yarn start`.
+- Build-time `VITE_APP_*` flags are read from `.env.development`; override any of them on the command line, e.g. `VITE_APP_AI_BACKEND=http://localhost:3016 VITE_APP_PORT=3001 yarn start`. Vite only reads env vars at startup, so restart the server after changing one.
 - Start servers one at a time. Starting several at once can raise a checker overlay about a missing `vite.config.mts.timestamp-*.mjs`; restart the affected server to clear it.
 - Verify readiness with `curl -s -o /dev/null -w '%{http_code}' http://localhost:<port>` → `200`.
 
@@ -22,7 +22,7 @@ description: How to run, switch and browser-test the excalidraw.com app (excalid
 - Wait for the page to finish loading before typing into any input: the editor listens for bare keys on the document and treats them as tool shortcuts, so early keystrokes are swallowed.
 
 ## AI features
-- `VITE_APP_AI_BACKEND` (set to `http://localhost:3016` in `.env.development`) enables AI UI. A mock SSE backend for `POST /v1/ai/text-to-diagram/chat-streaming` lives at `docs/splash-variants/mock-ai-backend.mjs`: `node docs/splash-variants/mock-ai-backend.mjs` (port 3016). It always returns the same Mermaid flowchart — say so whenever it backs a demo or recording.
+- `VITE_APP_AI_BACKEND` (set to `http://localhost:3016` in `.env.development`) enables the AI UI, but nothing listens there by default, so text-to-diagram fails until a backend is running. To test locally without a real backend, run a small Node HTTP server on port 3016 that answers `POST /v1/ai/text-to-diagram/chat-streaming` with SSE: `data: {"type":"content","delta":"..."}` chunks spelling out Mermaid, then `data: {"type":"done","finishReason":"stop"}` and `data: [DONE]`. Whenever such a mock backs a demo or recording, say so — it is not evidence of real AI behaviour.
 
 ## Browser testing notes
 - OS-level drag and drop is unavailable; dispatch a `DragEvent("drop")` with a `DataTransfer` containing the `File` instead, and disclose that the drop was simulated.

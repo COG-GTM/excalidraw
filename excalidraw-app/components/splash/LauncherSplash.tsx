@@ -4,6 +4,8 @@ import {
   loadSceneOrLibraryFromBlob,
   MIME_TYPES,
 } from "@excalidraw/excalidraw";
+import { randomId } from "@excalidraw/common";
+import { isInitializedImageElement, newElementWith } from "@excalidraw/element";
 import { trackEvent } from "@excalidraw/excalidraw/analytics";
 import {
   useAppProps,
@@ -18,7 +20,12 @@ import { editorJotaiStore } from "@excalidraw/excalidraw/editor-jotai";
 import clsx from "clsx";
 import React, { useEffect, useRef, useState } from "react";
 
-import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import type { ExcalidrawElement, FileId } from "@excalidraw/element/types";
+import type {
+  BinaryFileData,
+  BinaryFiles,
+  ExcalidrawImperativeAPI,
+} from "@excalidraw/excalidraw/types";
 
 import {
   findTemplateByKeyword,
@@ -31,7 +38,43 @@ import { isAIEnabled } from "./splashVariant";
 import "./LauncherSplash.scss";
 
 const isExcalidrawFile = (file: File) =>
-  file.name.endsWith(".excalidraw") || file.type === MIME_TYPES.excalidraw;
+  file.name.toLowerCase().endsWith(".excalidraw") ||
+  file.type === MIME_TYPES.excalidraw;
+
+/**
+ * `addFiles` never overwrites a file id already held by the editor, so an
+ * imported file whose id collides with a different existing file is given a
+ * fresh id (and its image elements re-pointed) before being added.
+ */
+const reconcileImportedFiles = (
+  elements: readonly ExcalidrawElement[],
+  imported: BinaryFiles | undefined,
+  existing: BinaryFiles,
+) => {
+  const remappedIds = new Map<FileId, FileId>();
+  const files: BinaryFileData[] = [];
+  for (const file of Object.values(imported ?? {})) {
+    const current = existing[file.id];
+    if (current && current.dataURL !== file.dataURL) {
+      const id = randomId() as FileId;
+      remappedIds.set(file.id, id);
+      files.push({ ...file, id });
+    } else {
+      files.push(file);
+    }
+  }
+  if (!remappedIds.size) {
+    return { elements, files };
+  }
+  return {
+    elements: elements.map((element) => {
+      const fileId =
+        isInitializedImageElement(element) && remappedIds.get(element.fileId);
+      return fileId ? newElementWith(element, { fileId }) : element;
+    }),
+    files,
+  };
+};
 
 const findExcalidrawFile = (files: FileList | null | undefined) => {
   if (!files) {
@@ -88,7 +131,12 @@ export const LauncherSplash = ({
       ) {
         return;
       }
-      const { elements, appState, files } = result.data;
+      const { appState } = result.data;
+      const { elements, files } = reconcileImportedFiles(
+        result.data.elements,
+        result.data.files,
+        excalidrawAPI.getFiles(),
+      );
       const current = excalidrawAPI.getAppState();
       excalidrawAPI.updateScene({
         elements,
@@ -101,8 +149,8 @@ export const LauncherSplash = ({
         },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
-      if (files && Object.keys(files).length) {
-        excalidrawAPI.addFiles(Object.values(files));
+      if (files.length) {
+        excalidrawAPI.addFiles(files);
       }
       excalidrawAPI.setViewport({
         target: getCommonBounds(elements),

@@ -63,7 +63,7 @@ export const AISplash = (_props: {
           className="ai-splash__input"
           type="text"
           value={prompt}
-          placeholder="Describe a diagram, e.g. login flow with 2FA…"
+          placeholder="e.g. login flow with 2FA…"
           aria-label="Describe a diagram to generate with AI"
           onChange={(event) => setPrompt(event.target.value)}
           onKeyDown={(event) => event.stopPropagation()}

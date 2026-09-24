@@ -14,7 +14,12 @@ import {
 
 import { getSelectedElements } from "@excalidraw/excalidraw/scene";
 
-import { elementOverlapsWithFrame } from "../src/frame";
+import {
+  elementOverlapsWithFrame,
+  getElementsInNewFrame,
+  getElementsInResizingFrame,
+  omitPartialGroups,
+} from "../src/frame";
 
 import type {
   ExcalidrawElement,
@@ -1180,6 +1185,583 @@ describe("adding elements to frames", () => {
       expect(h.elements.length).toBe(4);
       dragElementIntoFrame(frame2, rectangle1);
       expect(h.elements.length).toBe(4);
+    });
+  });
+});
+
+describe("frame membership helpers", () => {
+  let frame: ExcalidrawFrameLikeElement;
+
+  const ids = (elements: readonly ExcalidrawElement[]) =>
+    elements.map((element) => element.id).sort();
+
+  const setup = (elements: ExcalidrawElement[]) => {
+    API.setElements(elements);
+    return arrayToMap(h.elements);
+  };
+
+  beforeEach(async () => {
+    await render(<Excalidraw />);
+
+    frame = API.createElement({
+      id: "frame",
+      type: "frame",
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 200,
+    }) as ExcalidrawFrameLikeElement;
+  });
+
+  describe("getElementsInResizingFrame", () => {
+    const resizing = () =>
+      getElementsInResizingFrame(
+        h.elements,
+        frame,
+        h.state,
+        arrayToMap(h.elements),
+      );
+
+    it("should add an ungrouped element completely inside the frame", () => {
+      const inside = API.createElement({
+        id: "inside",
+        type: "rectangle",
+        x: 20,
+        y: 20,
+        width: 50,
+        height: 50,
+      });
+      const outside = API.createElement({
+        id: "outside",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+      });
+      setup([frame, inside, outside]);
+
+      expect(ids(resizing())).toEqual([inside.id]);
+    });
+
+    it("should not add an ungrouped element that only intersects the frame", () => {
+      const intersecting = API.createElement({
+        id: "intersecting",
+        type: "rectangle",
+        x: 150,
+        y: 20,
+        width: 100,
+        height: 50,
+      });
+      setup([frame, intersecting]);
+
+      expect(resizing()).toEqual([]);
+    });
+
+    it("should add a whole group when all its members are inside the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      setup([frame, a, b]);
+
+      expect(ids(resizing())).toEqual([a.id, b.id]);
+    });
+
+    it("should not add a group when only some members are inside the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      setup([frame, a, b]);
+
+      expect(resizing()).toEqual([]);
+    });
+
+    it("should keep a group when one member fully contains the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: -50,
+        y: -50,
+        width: 300,
+        height: 300,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      setup([frame, a, b]);
+
+      expect(ids(resizing())).toEqual([a.id, b.id]);
+    });
+
+    it("should keep a group when one member only intersects the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 150,
+        y: 10,
+        width: 100,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      setup([frame, a, b]);
+
+      expect(ids(resizing())).toEqual([a.id, b.id]);
+    });
+
+    it("should remove a partially contained group when no member intersects the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      setup([frame, a, b]);
+
+      expect(resizing()).toEqual([]);
+    });
+
+    it("should remove a group when no member is inside or intersecting the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 300,
+        y: 300,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const staying = API.createElement({
+        id: "staying",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      setup([frame, a, b, staying]);
+
+      expect(ids(resizing())).toEqual([staying.id]);
+    });
+
+    it("should keep only the groups that are still anchored to the frame", () => {
+      const anchored = API.createElement({
+        id: "anchored",
+        type: "rectangle",
+        x: 150,
+        y: 10,
+        width: 100,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const anchoredSibling = API.createElement({
+        id: "anchoredSibling",
+        type: "rectangle",
+        x: 400,
+        y: 400,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+        frameId: frame.id,
+      });
+      const detached = API.createElement({
+        id: "detached",
+        type: "rectangle",
+        x: 600,
+        y: 600,
+        width: 50,
+        height: 50,
+        groupIds: ["g2"],
+        frameId: frame.id,
+      });
+      const detachedSibling = API.createElement({
+        id: "detachedSibling",
+        type: "rectangle",
+        x: 800,
+        y: 800,
+        width: 50,
+        height: 50,
+        groupIds: ["g2"],
+        frameId: frame.id,
+      });
+      setup([frame, anchored, anchoredSibling, detached, detachedSibling]);
+
+      expect(ids(resizing())).toEqual([anchored.id, anchoredSibling.id]);
+    });
+
+    it("should remove an ungrouped child that no longer overlaps the frame", () => {
+      const gone = API.createElement({
+        id: "gone",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      const intersecting = API.createElement({
+        id: "intersecting",
+        type: "rectangle",
+        x: 150,
+        y: 20,
+        width: 100,
+        height: 50,
+        frameId: frame.id,
+      });
+      setup([frame, gone, intersecting]);
+
+      expect(ids(resizing())).toEqual([intersecting.id]);
+    });
+
+    it("should keep a child that fully contains the frame", () => {
+      const containing = API.createElement({
+        id: "containing",
+        type: "rectangle",
+        x: -50,
+        y: -50,
+        width: 300,
+        height: 300,
+        frameId: frame.id,
+      });
+      setup([frame, containing]);
+
+      expect(ids(resizing())).toEqual([containing.id]);
+    });
+
+    it("should exclude bound text from the result", () => {
+      const container = API.createElement({
+        id: "container",
+        type: "rectangle",
+        x: 20,
+        y: 20,
+        width: 100,
+        height: 50,
+        boundElements: [{ id: "label", type: "text" }],
+      });
+      const label = API.createElement({
+        id: "label",
+        type: "text",
+        x: 30,
+        y: 30,
+        width: 20,
+        height: 20,
+        containerId: container.id,
+      });
+      setup([frame, container, label]);
+
+      expect(ids(resizing())).toEqual([container.id]);
+    });
+
+    it("should not add elements that belong to another frame", () => {
+      const otherFrame = API.createElement({
+        id: "otherFrame",
+        type: "frame",
+        x: 20,
+        y: 20,
+        width: 100,
+        height: 100,
+      });
+      const otherChild = API.createElement({
+        id: "otherChild",
+        type: "rectangle",
+        x: 30,
+        y: 30,
+        width: 20,
+        height: 20,
+        frameId: otherFrame.id,
+      });
+      setup([frame, otherFrame, otherChild]);
+
+      expect(resizing()).toEqual([]);
+    });
+  });
+
+  describe("getElementsInNewFrame", () => {
+    const newFrame = () =>
+      getElementsInNewFrame(h.elements, frame, arrayToMap(h.elements));
+
+    it("should include ungrouped elements completely inside the frame", () => {
+      const inside = API.createElement({
+        id: "inside",
+        type: "rectangle",
+        x: 20,
+        y: 20,
+        width: 50,
+        height: 50,
+      });
+      const intersecting = API.createElement({
+        id: "intersecting",
+        type: "rectangle",
+        x: 150,
+        y: 20,
+        width: 100,
+        height: 50,
+      });
+      setup([frame, inside, intersecting]);
+
+      expect(ids(newFrame())).toEqual([inside.id]);
+    });
+
+    it("should include a group whose members are all inside the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      setup([frame, a, b]);
+
+      expect(ids(newFrame())).toEqual([a.id, b.id]);
+    });
+
+    it("should omit a group when only some members are inside the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const solo = API.createElement({
+        id: "solo",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 50,
+        height: 50,
+      });
+      setup([frame, a, b, solo]);
+
+      expect(ids(newFrame())).toEqual([solo.id]);
+    });
+
+    it("should omit a group that contains another frame", () => {
+      const otherFrame = API.createElement({
+        id: "otherFrame",
+        type: "frame",
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const grouped = API.createElement({
+        id: "grouped",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      setup([frame, otherFrame, grouped]);
+
+      expect(newFrame()).toEqual([]);
+    });
+  });
+
+  describe("omitPartialGroups", () => {
+    it("should keep ungrouped elements and fully contained groups", () => {
+      const solo = API.createElement({
+        id: "solo",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 20,
+        height: 20,
+      });
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 20,
+        height: 20,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 20,
+        height: 20,
+        groupIds: ["g1"],
+      });
+      const elementsMap = setup([frame, solo, a, b]);
+
+      expect(ids(omitPartialGroups([solo, a, b], frame, elementsMap))).toEqual([
+        a.id,
+        b.id,
+        solo.id,
+      ]);
+    });
+
+    it("should omit every member of a group that is only partially inside the frame", () => {
+      const a = API.createElement({
+        id: "a",
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 20,
+        height: 20,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        id: "b",
+        type: "rectangle",
+        x: 100,
+        y: 100,
+        width: 20,
+        height: 20,
+        groupIds: ["g1"],
+      });
+      const outside = API.createElement({
+        id: "outside",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 20,
+        height: 20,
+        groupIds: ["g1"],
+      });
+      const elementsMap = setup([frame, a, b, outside]);
+
+      expect(omitPartialGroups([a, b], frame, elementsMap)).toEqual([]);
+    });
+
+    it("should omit nested group members when the outer group is partial", () => {
+      const inner1 = API.createElement({
+        id: "inner1",
+        type: "rectangle",
+        x: 10,
+        y: 10,
+        width: 20,
+        height: 20,
+        groupIds: ["inner", "outer"],
+      });
+      const inner2 = API.createElement({
+        id: "inner2",
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 20,
+        height: 20,
+        groupIds: ["inner", "outer"],
+      });
+      const outerOnly = API.createElement({
+        id: "outerOnly",
+        type: "rectangle",
+        x: 500,
+        y: 500,
+        width: 20,
+        height: 20,
+        groupIds: ["outer"],
+      });
+      const elementsMap = setup([frame, inner1, inner2, outerOnly]);
+
+      expect(omitPartialGroups([inner1, inner2], frame, elementsMap)).toEqual(
+        [],
+      );
     });
   });
 });

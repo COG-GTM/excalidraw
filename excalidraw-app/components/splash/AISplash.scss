@@ -59,14 +59,19 @@
       box-shadow: 0 0 0 2px var(--color-primary-light);
     }
 
-    &__input {
+    input[type="text"].ai-splash-prompt__input {
       flex: 1 1 auto;
       min-width: 0;
       padding: 0.375rem 0;
 
       background: transparent;
       border: none;
+      border-radius: 0;
       outline: none;
+
+      &:focus-visible {
+        box-shadow: none;
+      }
 
       color: var(--text-primary-color);
       font-family: inherit;
@@ -110,7 +115,7 @@
 
   &.theme--dark {
     .ai-splash-prompt {
-      &__input::placeholder {
+      input[type="text"].ai-splash-prompt__input::placeholder {
         color: var(--color-gray-60);
       }
     }

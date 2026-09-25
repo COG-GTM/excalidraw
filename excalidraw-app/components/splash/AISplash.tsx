@@ -16,7 +16,7 @@ import { isAIEnabled } from "./splashVariant";
 
 import "./AISplash.scss";
 
-const PROMPT_PLACEHOLDER = "Describe a diagram… e.g. user signup flow";
+const PROMPT_PLACEHOLDER = "Describe a diagram… e.g. signup flow";
 
 const arrowRightIcon = (
   <svg

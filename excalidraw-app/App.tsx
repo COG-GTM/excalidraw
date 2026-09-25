@@ -102,6 +102,7 @@ import Collab, {
 import { AppFooter } from "./components/AppFooter";
 import { AppMainMenu } from "./components/AppMainMenu";
 import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
+import { getSplashVariant } from "./components/splash/splashVariant";
 import {
   ExportToExcalidrawPlus,
   exportToExcalidrawPlus,
@@ -371,6 +372,8 @@ const initializeScene = async (opts: {
   }
   return { scene: null, isExternalScene: false };
 };
+
+const splashVariant = getSplashVariant();
 
 const ExcalidrawWrapper = () => {
   const excalidrawAPI = useExcalidrawAPI();
@@ -1037,6 +1040,8 @@ const ExcalidrawWrapper = () => {
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
           isCollabEnabled={!isCollabDisabled}
+          splashVariant={splashVariant}
+          excalidrawAPI={excalidrawAPI}
         />
         <OverwriteConfirmDialog>
           <OverwriteConfirmDialog.Actions.ExportToImage />

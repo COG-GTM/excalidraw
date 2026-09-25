@@ -1,0 +1,94 @@
+.excalidraw {
+  .TemplatesDialog {
+    .TemplatesDialog__hint {
+      margin: 0 0 1.25rem;
+      color: var(--color-gray-60);
+      font-size: 0.875rem;
+    }
+
+    .TemplatesDialog__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .TemplatesDialog__card {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      margin: 0;
+      text-align: left;
+      font: inherit;
+      color: var(--text-primary-color);
+      background: var(--color-surface-lowest);
+      border: 1px solid var(--dialog-border-color);
+      border-radius: var(--border-radius-lg);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease,
+        box-shadow 0.15s ease;
+
+      &:hover {
+        background: var(--color-surface-mid);
+        border-color: var(--color-brand-hover);
+      }
+
+      &:active {
+        background: var(--color-surface-high);
+        border-color: var(--color-brand-active);
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--focus-highlight-color);
+        border-color: var(--color-brand-hover);
+      }
+    }
+
+    .TemplatesDialog__preview {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      padding: 0.5rem;
+      box-sizing: border-box;
+      background: var(--color-surface-low);
+      border-radius: var(--border-radius-md);
+      color: var(--color-on-surface);
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+
+      .fill {
+        fill: var(--color-primary);
+        stroke: none;
+      }
+    }
+
+    .TemplatesDialog__card-name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+
+    .TemplatesDialog__card-description {
+      font-size: 0.8125rem;
+      line-height: 1.35;
+      color: var(--color-gray-60);
+    }
+  }
+
+  &.theme--dark .TemplatesDialog {
+    .TemplatesDialog__card {
+      background: var(--color-surface-low);
+
+      &:hover {
+        background: var(--color-surface-mid);
+      }
+    }
+
+    .TemplatesDialog__preview {
+      background: var(--color-surface-lowest);
+    }
+  }
+}

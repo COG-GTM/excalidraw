@@ -82,7 +82,11 @@ export const LauncherSplash = ({
     }
     setHint(null);
     try {
-      const result = await loadSceneOrLibraryFromBlob(blob, null, null);
+      const result = await loadSceneOrLibraryFromBlob(
+        blob,
+        excalidrawAPI.getAppState(),
+        excalidrawAPI.getSceneElementsIncludingDeleted(),
+      );
       if (!isMounted.current || excalidrawAPI.getSceneElements().length !== 0) {
         return;
       }
@@ -93,15 +97,13 @@ export const LauncherSplash = ({
       if (!elements.length) {
         throw new Error("The scene file has no elements");
       }
-      const current = excalidrawAPI.getAppState();
       excalidrawAPI.updateScene({
         elements,
         appState: {
-          viewBackgroundColor:
-            appState.viewBackgroundColor ?? current.viewBackgroundColor,
-          gridSize: appState.gridSize ?? current.gridSize,
-          gridStep: appState.gridStep ?? current.gridStep,
-          gridModeEnabled: appState.gridModeEnabled ?? current.gridModeEnabled,
+          viewBackgroundColor: appState.viewBackgroundColor,
+          gridSize: appState.gridSize,
+          gridStep: appState.gridStep,
+          gridModeEnabled: appState.gridModeEnabled,
         },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });

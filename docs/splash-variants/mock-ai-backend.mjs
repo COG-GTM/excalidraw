@@ -9,7 +9,10 @@
 import http from "node:http";
 
 const PORT = Number(process.env.PORT || 3016);
+const HOST = "127.0.0.1";
 const CHUNK_DELAY_MS = 40;
+const MAX_BODY_BYTES = 64 * 1024;
+const LOCAL_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const buildMermaid = (prompt) => {
   const title = prompt.trim().slice(0, 40) || "Your idea";
@@ -43,24 +46,39 @@ const lastUserPrompt = (messages) => {
 };
 
 const readBody = (req) =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
+      if (body.length > MAX_BODY_BYTES) {
+        req.pause();
+        reject(new Error("payload too large"));
+      }
     });
     req.on("end", () => resolve(body));
+    req.on("error", reject);
   });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Accept",
-  "Access-Control-Expose-Headers": "X-Ratelimit-Limit, X-Ratelimit-Remaining",
+// only the local Vite dev servers may call this from a browser
+const corsHeaders = (req) => {
+  const origin = req.headers.origin;
+  if (!origin || !LOCAL_ORIGIN_RE.test(origin)) {
+    return {};
+  }
+  return {
+    "Access-Control-Allow-Origin": origin,
+    Vary: "Origin",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Accept",
+    "Access-Control-Expose-Headers": "X-Ratelimit-Limit, X-Ratelimit-Remaining",
+  };
 };
 
 const server = http.createServer(async (req, res) => {
+  const CORS_HEADERS = corsHeaders(req);
+
   if (req.method === "OPTIONS") {
     res.writeHead(204, CORS_HEADERS);
     res.end();
@@ -71,7 +89,20 @@ const server = http.createServer(async (req, res) => {
     req.method === "POST" &&
     req.url === "/v1/ai/text-to-diagram/chat-streaming"
   ) {
-    const raw = await readBody(req);
+    let raw;
+    try {
+      raw = await readBody(req);
+    } catch {
+      res.writeHead(413, {
+        ...CORS_HEADERS,
+        "Content-Type": "application/json",
+        Connection: "close",
+      });
+      res.end(JSON.stringify({ message: "payload too large" }), () =>
+        req.destroy(),
+      );
+      return;
+    }
     let messages = [];
     try {
       messages = JSON.parse(raw || "{}").messages ?? [];
@@ -107,8 +138,6 @@ const server = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ message: `No mock for ${req.method} ${req.url}` }));
 });
 
-server.listen(PORT, () => {
-  process.stdout.write(
-    `mock AI backend listening on http://localhost:${PORT}\n`,
-  );
+server.listen(PORT, HOST, () => {
+  process.stdout.write(`mock AI backend listening on http://${HOST}:${PORT}\n`);
 });

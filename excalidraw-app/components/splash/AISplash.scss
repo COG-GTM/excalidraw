@@ -47,7 +47,8 @@
     pointer-events: var(--ui-pointerEvents);
   }
 
-  .AISplash__input {
+  input[type="text"].AISplash__input {
+    box-sizing: border-box;
     flex: 1;
     height: 2.25rem;
     padding: 0 0.75rem;

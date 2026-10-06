@@ -15,12 +15,11 @@ const MAX_BODY_BYTES = 64 * 1024;
 const LOCAL_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const buildMermaid = (prompt) => {
-  const title =
-    prompt
-      .replace(/\s+/g, " ")
-      .replace(/[^\p{L}\p{M}\p{N} ,.!?'-]/gu, "")
-      .trim()
-      .slice(0, 40) || "Your idea";
+  const cleaned = prompt
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{M}\p{N} ,.!?'-]/gu, "")
+    .trim();
+  const title = Array.from(cleaned).slice(0, 40).join("").trim() || "Your idea";
   return [
     "flowchart TD",
     `  A["${title}"] --> B{Understand the request}`,

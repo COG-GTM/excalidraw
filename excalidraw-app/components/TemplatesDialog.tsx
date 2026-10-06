@@ -20,6 +20,29 @@ export const STRINGS = {
 
 const PREVIEW_PADDING = 24;
 
+export const getArrowheadPoints = (
+  tip: readonly [number, number],
+  from: readonly [number, number],
+  size: number,
+): string => {
+  if (tip[0] === from[0] && tip[1] === from[1]) {
+    return "";
+  }
+
+  const angle = Math.atan2(from[1] - tip[1], from[0] - tip[0]);
+  const wingAngle = Math.PI / 7.2;
+  const wing1 = [
+    tip[0] + size * Math.cos(angle - wingAngle),
+    tip[1] + size * Math.sin(angle - wingAngle),
+  ];
+  const wing2 = [
+    tip[0] + size * Math.cos(angle + wingAngle),
+    tip[1] + size * Math.sin(angle + wingAngle),
+  ];
+
+  return `${wing1[0]},${wing1[1]} ${tip[0]},${tip[1]} ${wing2[0]},${wing2[1]}`;
+};
+
 const getFill = (backgroundColor: string) =>
   backgroundColor === "transparent" ? "none" : backgroundColor;
 
@@ -92,7 +115,6 @@ const TemplatePreview: React.FC<{ template: StarterTemplate }> = ({
           />
         );
       case "line":
-      case "arrow":
         return (
           <polyline
             key={element.id}
@@ -106,6 +128,63 @@ const TemplatePreview: React.FC<{ template: StarterTemplate }> = ({
             strokeLinejoin="round"
           />
         );
+      case "arrow": {
+        const points = element.points
+          .map(([x, y]) => `${element.x + x},${element.y + y}`)
+          .join(" ");
+        const arrowheadSize = 10 + element.strokeWidth * 2;
+        const getAbsolutePoint = (point: readonly [number, number]) =>
+          [element.x + point[0], element.y + point[1]] as const;
+        const startArrowheadPoints =
+          element.points.length >= 2 && element.startArrowhead !== null
+            ? getArrowheadPoints(
+                getAbsolutePoint(element.points[0]),
+                getAbsolutePoint(element.points[1]),
+                arrowheadSize,
+              )
+            : "";
+        const endArrowheadPoints =
+          element.points.length >= 2 && element.endArrowhead !== null
+            ? getArrowheadPoints(
+                getAbsolutePoint(element.points[element.points.length - 1]),
+                getAbsolutePoint(element.points[element.points.length - 2]),
+                arrowheadSize,
+              )
+            : "";
+
+        return (
+          <g key={element.id}>
+            <polyline
+              points={points}
+              fill="none"
+              stroke={stroke}
+              strokeWidth={element.strokeWidth}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {endArrowheadPoints && (
+              <polyline
+                points={endArrowheadPoints}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={element.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            {startArrowheadPoints && (
+              <polyline
+                points={startArrowheadPoints}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={element.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+          </g>
+        );
+      }
       case "text": {
         const lines = element.text.split("\n");
         const textAnchor =

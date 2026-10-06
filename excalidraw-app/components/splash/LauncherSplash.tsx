@@ -102,6 +102,7 @@ export const LauncherSplash = ({
           gridSize: appState?.gridSize ?? current.gridSize,
           gridStep: appState?.gridStep ?? current.gridStep,
           gridModeEnabled: appState?.gridModeEnabled ?? current.gridModeEnabled,
+          fileHandle: appState?.fileHandle ?? null,
         },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });

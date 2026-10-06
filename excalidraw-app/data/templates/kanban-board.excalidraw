@@ -1,0 +1,22 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "excalidraw",
+  "elements": [
+    {"id":"todo-column","type":"rectangle","x":80,"y":80,"width":250,"height":420,"backgroundColor":"#f1f3f5","fillStyle":"solid","boundElements":[{"id":"todo-heading","type":"text"}]},
+    {"id":"todo-heading","type":"text","x":100,"y":100,"width":210,"height":42,"fontSize":22,"fontFamily":5,"text":"To do","originalText":"To do","textAlign":"center","verticalAlign":"middle","containerId":"todo-column","autoResize":false,"lineHeight":1.25},
+    {"id":"task-research","type":"rectangle","x":105,"y":175,"width":200,"height":90,"backgroundColor":"#fff3bf","fillStyle":"solid","boundElements":[{"id":"research-text","type":"text"},{"id":"task-arrow","type":"arrow"}]},
+    {"id":"research-text","type":"text","x":105,"y":175,"width":200,"height":90,"fontSize":18,"fontFamily":5,"text":"Interview users","originalText":"Interview users","textAlign":"center","verticalAlign":"middle","containerId":"task-research","autoResize":false,"lineHeight":1.25},
+    {"id":"doing-column","type":"rectangle","x":380,"y":80,"width":250,"height":420,"backgroundColor":"#f1f3f5","fillStyle":"solid","boundElements":[{"id":"doing-heading","type":"text"}]},
+    {"id":"doing-heading","type":"text","x":400,"y":100,"width":210,"height":42,"fontSize":22,"fontFamily":5,"text":"In progress","originalText":"In progress","textAlign":"center","verticalAlign":"middle","containerId":"doing-column","autoResize":false,"lineHeight":1.25},
+    {"id":"task-design","type":"rectangle","x":405,"y":175,"width":200,"height":90,"backgroundColor":"#d0ebff","fillStyle":"solid","boundElements":[{"id":"design-text","type":"text"},{"id":"task-arrow","type":"arrow"}]},
+    {"id":"design-text","type":"text","x":405,"y":175,"width":200,"height":90,"fontSize":18,"fontFamily":5,"text":"Design onboarding","originalText":"Design onboarding","textAlign":"center","verticalAlign":"middle","containerId":"task-design","autoResize":false,"lineHeight":1.25},
+    {"id":"done-column","type":"rectangle","x":680,"y":80,"width":250,"height":420,"backgroundColor":"#f1f3f5","fillStyle":"solid","boundElements":[{"id":"done-heading","type":"text"}]},
+    {"id":"done-heading","type":"text","x":700,"y":100,"width":210,"height":42,"fontSize":22,"fontFamily":5,"text":"Done","originalText":"Done","textAlign":"center","verticalAlign":"middle","containerId":"done-column","autoResize":false,"lineHeight":1.25},
+    {"id":"task-release","type":"rectangle","x":705,"y":175,"width":200,"height":90,"backgroundColor":"#d3f9d8","fillStyle":"solid","boundElements":[{"id":"release-text","type":"text"}]},
+    {"id":"release-text","type":"text","x":705,"y":175,"width":200,"height":90,"fontSize":18,"fontFamily":5,"text":"Publish guide","originalText":"Publish guide","textAlign":"center","verticalAlign":"middle","containerId":"task-release","autoResize":false,"lineHeight":1.25},
+    {"id":"task-arrow","type":"arrow","x":305,"y":220,"width":100,"height":0,"points":[[0,0],[100,0]],"startBinding":{"elementId":"task-research","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"task-design","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"}
+  ],
+  "appState": {"viewBackgroundColor":"#ffffff","gridSize":null},
+  "files": {}
+}

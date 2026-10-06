@@ -1,0 +1,20 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "excalidraw",
+  "elements": [
+    {"id":"center","type":"ellipse","x":390,"y":220,"width":220,"height":100,"backgroundColor":"#d0ebff","fillStyle":"solid","boundElements":[{"id":"center-text","type":"text"},{"id":"research-arrow","type":"arrow"},{"id":"design-arrow","type":"arrow"},{"id":"launch-arrow","type":"arrow"}]},
+    {"id":"center-text","type":"text","x":390,"y":220,"width":220,"height":100,"fontSize":22,"fontFamily":5,"text":"Product launch","originalText":"Product launch","textAlign":"center","verticalAlign":"middle","containerId":"center","autoResize":false,"lineHeight":1.25},
+    {"id":"research","type":"rectangle","x":80,"y":100,"width":210,"height":80,"backgroundColor":"#eebefa","fillStyle":"solid","boundElements":[{"id":"research-text","type":"text"},{"id":"research-arrow","type":"arrow"}]},
+    {"id":"research-text","type":"text","x":80,"y":100,"width":210,"height":80,"fontSize":20,"fontFamily":5,"text":"Customer research","originalText":"Customer research","textAlign":"center","verticalAlign":"middle","containerId":"research","autoResize":false,"lineHeight":1.25},
+    {"id":"design","type":"rectangle","x":80,"y":360,"width":210,"height":80,"backgroundColor":"#fff3bf","fillStyle":"solid","boundElements":[{"id":"design-text","type":"text"},{"id":"design-arrow","type":"arrow"}]},
+    {"id":"design-text","type":"text","x":80,"y":360,"width":210,"height":80,"fontSize":20,"fontFamily":5,"text":"Experience design","originalText":"Experience design","textAlign":"center","verticalAlign":"middle","containerId":"design","autoResize":false,"lineHeight":1.25},
+    {"id":"launch","type":"rectangle","x":710,"y":230,"width":210,"height":80,"backgroundColor":"#d3f9d8","fillStyle":"solid","boundElements":[{"id":"launch-text","type":"text"},{"id":"launch-arrow","type":"arrow"}]},
+    {"id":"launch-text","type":"text","x":710,"y":230,"width":210,"height":80,"fontSize":20,"fontFamily":5,"text":"Launch plan","originalText":"Launch plan","textAlign":"center","verticalAlign":"middle","containerId":"launch","autoResize":false,"lineHeight":1.25},
+    {"id":"research-arrow","type":"arrow","x":290,"y":140,"width":100,"height":100,"points":[[0,0],[100,100]],"startBinding":{"elementId":"research","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"center","fixedPoint":[0,0.25],"mode":"orbit"},"endArrowhead":"arrow"},
+    {"id":"design-arrow","type":"arrow","x":290,"y":400,"width":100,"height":-100,"points":[[0,0],[100,-100]],"startBinding":{"elementId":"design","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"center","fixedPoint":[0,0.75],"mode":"orbit"},"endArrowhead":"arrow"},
+    {"id":"launch-arrow","type":"arrow","x":610,"y":270,"width":100,"height":0,"points":[[0,0],[100,0]],"startBinding":{"elementId":"center","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"launch","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"}
+  ],
+  "appState": {"viewBackgroundColor":"#ffffff","gridSize":null},
+  "files": {}
+}

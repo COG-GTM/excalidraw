@@ -1,0 +1,20 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "excalidraw",
+  "elements": [
+    {"id":"client","type":"rectangle","x":70,"y":180,"width":190,"height":90,"backgroundColor":"#d0ebff","fillStyle":"solid","boundElements":[{"id":"client-text","type":"text"},{"id":"gateway-arrow","type":"arrow"}]},
+    {"id":"client-text","type":"text","x":70,"y":180,"width":190,"height":90,"fontSize":20,"fontFamily":5,"text":"Web client","originalText":"Web client","textAlign":"center","verticalAlign":"middle","containerId":"client","autoResize":false,"lineHeight":1.25},
+    {"id":"gateway","type":"diamond","x":350,"y":175,"width":180,"height":100,"backgroundColor":"#fff3bf","fillStyle":"solid","boundElements":[{"id":"gateway-text","type":"text"},{"id":"gateway-arrow","type":"arrow"},{"id":"api-arrow","type":"arrow"}]},
+    {"id":"gateway-text","type":"text","x":350,"y":175,"width":180,"height":100,"fontSize":18,"fontFamily":5,"text":"API gateway","originalText":"API gateway","textAlign":"center","verticalAlign":"middle","containerId":"gateway","autoResize":false,"lineHeight":1.25},
+    {"id":"service","type":"rectangle","x":620,"y":180,"width":200,"height":90,"backgroundColor":"#d3f9d8","fillStyle":"solid","boundElements":[{"id":"service-text","type":"text"},{"id":"api-arrow","type":"arrow"},{"id":"database-arrow","type":"arrow"}]},
+    {"id":"service-text","type":"text","x":620,"y":180,"width":200,"height":90,"fontSize":20,"fontFamily":5,"text":"Application service","originalText":"Application service","textAlign":"center","verticalAlign":"middle","containerId":"service","autoResize":false,"lineHeight":1.25},
+    {"id":"database","type":"ellipse","x":900,"y":180,"width":190,"height":90,"backgroundColor":"#eebefa","fillStyle":"solid","boundElements":[{"id":"database-text","type":"text"},{"id":"database-arrow","type":"arrow"}]},
+    {"id":"database-text","type":"text","x":900,"y":180,"width":190,"height":90,"fontSize":20,"fontFamily":5,"text":"Postgres database","originalText":"Postgres database","textAlign":"center","verticalAlign":"middle","containerId":"database","autoResize":false,"lineHeight":1.25},
+    {"id":"gateway-arrow","type":"arrow","x":260,"y":225,"width":90,"height":0,"points":[[0,0],[90,0]],"startBinding":{"elementId":"client","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"gateway","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"},
+    {"id":"api-arrow","type":"arrow","x":530,"y":225,"width":90,"height":0,"points":[[0,0],[90,0]],"startBinding":{"elementId":"gateway","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"service","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"},
+    {"id":"database-arrow","type":"arrow","x":820,"y":225,"width":80,"height":0,"points":[[0,0],[80,0]],"startBinding":{"elementId":"service","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"database","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"}
+  ],
+  "appState": {"viewBackgroundColor":"#ffffff","gridSize":null},
+  "files": {}
+}

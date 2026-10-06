@@ -18,7 +18,7 @@ const buildMermaid = (prompt) => {
   const title =
     prompt
       .replace(/\s+/g, " ")
-      .replace(/[^\w ,.!?'-]/g, "")
+      .replace(/[^\p{L}\p{M}\p{N} ,.!?'-]/gu, "")
       .trim()
       .slice(0, 40) || "Your idea";
   return [

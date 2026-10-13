@@ -128,6 +128,7 @@ export type ActionName =
   | "toggleElementLock"
   | "toggleLinearEditor"
   | "selectAllElementsInFrame"
+  | "selectAllWithSameStrokeColor"
   | "removeAllElementsFromFrame"
   | "updateFrameRendering"
   | "createContainerFromText"

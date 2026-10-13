@@ -87,7 +87,7 @@ describe("contextMenu element", () => {
       clientY: 1,
     });
     const contextMenu = UI.queryContextMenu();
-    const expectedShortcutNames: ShortcutName[] = [
+    const expectedShortcutNames: (ShortcutName | ActionName)[] = [
       "paste",
       "selectAll",
       "gridMode",
@@ -122,6 +122,7 @@ describe("contextMenu element", () => {
       "cut",
       "copy",
       "paste",
+      "selectAllWithSameStrokeColor",
       "wrapSelectionInFrame",
       "copyStyles",
       "pasteStyles",
@@ -212,10 +213,11 @@ describe("contextMenu element", () => {
     const contextMenu = UI.queryContextMenu();
     const contextMenuOptions =
       contextMenu?.querySelectorAll(".context-menu li");
-    const expectedShortcutNames: ShortcutName[] = [
+    const expectedShortcutNames: (ShortcutName | ActionName)[] = [
       "cut",
       "copy",
       "paste",
+      "selectAllWithSameStrokeColor",
       "wrapSelectionInFrame",
       "copyStyles",
       "pasteStyles",
@@ -273,6 +275,7 @@ describe("contextMenu element", () => {
       "cut",
       "copy",
       "paste",
+      "selectAllWithSameStrokeColor",
       "wrapSelectionInFrame",
       "copyStyles",
       "pasteStyles",

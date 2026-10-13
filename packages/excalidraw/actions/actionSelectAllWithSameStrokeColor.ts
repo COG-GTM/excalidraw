@@ -1,5 +1,6 @@
 import {
   CaptureUpdateAction,
+  excludeElementsInFramesFromSelection,
   getNonDeletedElements,
   getSelectedElements,
   isLinearElement,
@@ -45,12 +46,14 @@ export const actionSelectAllWithSameStrokeColor = register({
       return false;
     }
 
-    const elementsToSelect = elements.filter(
-      (element) =>
-        !element.isDeleted &&
-        strokeColors.has(element.strokeColor) &&
-        !(isTextElement(element) && element.containerId) &&
-        !element.locked,
+    const elementsToSelect = excludeElementsInFramesFromSelection(
+      elements.filter(
+        (element) =>
+          !element.isDeleted &&
+          strokeColors.has(element.strokeColor) &&
+          !(isTextElement(element) && element.containerId) &&
+          !element.locked,
+      ),
     );
 
     const selectedElementIds = elementsToSelect.reduce(

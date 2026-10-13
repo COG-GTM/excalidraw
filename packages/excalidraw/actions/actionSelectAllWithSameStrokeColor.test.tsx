@@ -92,6 +92,26 @@ describe("actionSelectAllWithSameStrokeColor", () => {
     expect(selectedIds()).toEqual(["blue", "blue2", "red", "red2"]);
   });
 
+  it("keeps a matching frame but not its matching children", () => {
+    const frame = API.createElement({
+      id: "frame",
+      type: "frame",
+      strokeColor: RED,
+    });
+    const child = API.createElement({
+      id: "child",
+      strokeColor: RED,
+      frameId: frame.id,
+    });
+    const outside = API.createElement({ id: "outside", strokeColor: RED });
+    API.setElements([frame, child, outside]);
+    API.setSelectedElements([outside]);
+
+    API.executeAction(actionSelectAllWithSameStrokeColor);
+
+    expect(selectedIds()).toEqual(["frame", "outside"]);
+  });
+
   it("selects whole groups containing a matching element", () => {
     const red = API.createElement({ id: "red", strokeColor: RED });
     const groupedRed = API.createElement({

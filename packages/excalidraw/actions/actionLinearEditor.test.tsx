@@ -249,10 +249,12 @@ describe("actionLinearEditor", () => {
       API.setElements([open, closed]);
 
       API.setSelectedElements([open]);
-      expect(document.querySelector('[aria-label="Break polygon"]')).toBeNull();
+      expect(
+        h.app.ownerDocument.querySelector('[aria-label="Break polygon"]'),
+      ).toBeNull();
 
       API.setSelectedElements([closed]);
-      const toggle = document.querySelector<HTMLButtonElement>(
+      const toggle = h.app.ownerDocument.querySelector<HTMLButtonElement>(
         'button[aria-label="Break polygon"]',
       );
       expect(toggle).not.toBeNull();

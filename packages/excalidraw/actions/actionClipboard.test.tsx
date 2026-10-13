@@ -154,7 +154,10 @@ describe("actionClipboard", () => {
     it("matches Ctrl/Cmd+X only", () => {
       expect(
         actionCut.keyTest!(
-          new KeyboardEvent("keydown", { key: KEYS.X, ctrlKey: true }),
+          new h.app.ownerWindow.KeyboardEvent("keydown", {
+            key: KEYS.X,
+            ctrlKey: true,
+          }),
           h.state,
           h.elements,
           h.app,
@@ -162,7 +165,7 @@ describe("actionClipboard", () => {
       ).toBe(true);
       expect(
         actionCut.keyTest!(
-          new KeyboardEvent("keydown", { key: KEYS.X }),
+          new h.app.ownerWindow.KeyboardEvent("keydown", { key: KEYS.X }),
           h.state,
           h.elements,
           h.app,
@@ -170,7 +173,10 @@ describe("actionClipboard", () => {
       ).toBe(false);
       expect(
         actionCut.keyTest!(
-          new KeyboardEvent("keydown", { key: KEYS.C, ctrlKey: true }),
+          new h.app.ownerWindow.KeyboardEvent("keydown", {
+            key: KEYS.C,
+            ctrlKey: true,
+          }),
           h.state,
           h.elements,
           h.app,
@@ -351,7 +357,7 @@ describe("actionClipboard", () => {
     it("matches Shift+Alt+C by key code", () => {
       expect(
         actionCopyAsPng.keyTest!(
-          new KeyboardEvent("keydown", {
+          new h.app.ownerWindow.KeyboardEvent("keydown", {
             code: "KeyC",
             altKey: true,
             shiftKey: true,
@@ -360,7 +366,10 @@ describe("actionClipboard", () => {
       ).toBe(true);
       expect(
         actionCopyAsPng.keyTest!(
-          new KeyboardEvent("keydown", { code: "KeyC", altKey: true }),
+          new h.app.ownerWindow.KeyboardEvent("keydown", {
+            code: "KeyC",
+            altKey: true,
+          }),
         ),
       ).toBe(false);
     });

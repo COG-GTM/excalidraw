@@ -62,7 +62,8 @@ const executeWithValue = <T extends Parameters<typeof API.executeAction>[0]>(
     h.app.actionManager.executeAction(action, "api", value);
   });
 
-const keyDown = (init: KeyboardEventInit) => new KeyboardEvent("keydown", init);
+const keyDown = (init: KeyboardEventInit) =>
+  new h.app.ownerWindow.KeyboardEvent("keydown", init);
 
 /** resolves the data promise passed to saveAsJSON, like the real impl does */
 const resolveSavedData = async () =>

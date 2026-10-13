@@ -1,5 +1,6 @@
 import {
   CaptureUpdateAction,
+  excludeElementsInFramesFromSelection,
   getNonDeletedElements,
   isLinearElement,
   isTextElement,
@@ -7,7 +8,7 @@ import {
   selectGroupsForSelectedElements,
 } from "@excalidraw/element";
 
-import { arrayToMap } from "@excalidraw/common";
+import { arrayToMap, colorToHex } from "@excalidraw/common";
 
 import type {
   ExcalidrawElement,
@@ -18,6 +19,8 @@ import type {
 import { selectAllIcon } from "../components/icons";
 
 import { register } from "./register";
+
+const normalizeColor = (color: string) => colorToHex(color) ?? color;
 
 export const actionSelectAllWithSameStrokeColor = register({
   name: "selectAllWithSameStrokeColor",
@@ -36,19 +39,21 @@ export const actionSelectAllWithSameStrokeColor = register({
     const strokeColors = new Set(
       app.scene
         .getSelectedElements(appState)
-        .map((element) => element.strokeColor),
+        .map((element) => normalizeColor(element.strokeColor)),
     );
 
     if (!strokeColors.size) {
       return false;
     }
 
-    const matchingElements = elements.filter(
-      (element) =>
-        !element.isDeleted &&
-        !(isTextElement(element) && element.containerId) &&
-        !element.locked &&
-        strokeColors.has(element.strokeColor),
+    const matchingElements = excludeElementsInFramesFromSelection(
+      elements.filter(
+        (element) =>
+          !element.isDeleted &&
+          !(isTextElement(element) && element.containerId) &&
+          !element.locked &&
+          strokeColors.has(normalizeColor(element.strokeColor)),
+      ),
     );
 
     const selectedElementIds = matchingElements.reduce(

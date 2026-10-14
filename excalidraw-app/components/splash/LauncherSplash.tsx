@@ -6,7 +6,10 @@ import {
   useExcalidrawSetAppState,
 } from "@excalidraw/excalidraw/components/App";
 import { chatHistoryAtom } from "@excalidraw/excalidraw/components/TTDDialog/TTDContext";
-import { loadSceneOrLibraryFromBlob } from "@excalidraw/excalidraw/data/blob";
+import {
+  getFileHandle,
+  loadSceneOrLibraryFromBlob,
+} from "@excalidraw/excalidraw/data/blob";
 import { useSetAtom } from "@excalidraw/excalidraw/editor-jotai";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -71,16 +74,21 @@ export const LauncherSplash = ({
     setStatus(LAUNCHER_STRINGS.noMatch(q));
   };
 
-  const importFile = async (file: File) => {
+  const importFile = async (
+    file: File,
+    fileHandlePromise?: Promise<FileSystemFileHandle | null>,
+  ) => {
     if (!excalidrawAPI) {
       return;
     }
     let result;
     try {
+      const fileHandle = (await fileHandlePromise) ?? null;
       result = await loadSceneOrLibraryFromBlob(
         file,
         excalidrawAPI.getAppState(),
         excalidrawAPI.getSceneElements(),
+        fileHandle,
       );
     } catch (error) {
       if (mountedRef.current) {
@@ -103,6 +111,8 @@ export const LauncherSplash = ({
           gridSize: appState?.gridSize ?? current.gridSize,
           gridStep: appState?.gridStep ?? current.gridStep,
           gridModeEnabled: appState?.gridModeEnabled ?? current.gridModeEnabled,
+          name: appState?.name ?? current.name,
+          fileHandle: appState?.fileHandle ?? null,
         },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
@@ -150,7 +160,7 @@ export const LauncherSplash = ({
     }
     event.preventDefault();
     event.stopPropagation();
-    importFile(files[0]);
+    importFile(files[0], getFileHandle(event));
   };
 
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {

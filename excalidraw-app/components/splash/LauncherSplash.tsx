@@ -46,6 +46,7 @@ export const LauncherSplash = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(false);
   const importingRef = useRef(false);
+  const [importing, setImporting] = useState(false);
 
   const disabled = !excalidrawAPI;
 
@@ -80,14 +81,22 @@ export const LauncherSplash = ({
     file: File,
     fileHandlePromise?: Promise<FileSystemFileHandle | null>,
   ) => {
-    if (!excalidrawAPI || importingRef.current) {
+    if (!excalidrawAPI) {
+      return;
+    }
+    if (importingRef.current) {
+      setStatus(LAUNCHER_STRINGS.importBusy(file.name));
       return;
     }
     importingRef.current = true;
+    setImporting(true);
     try {
       await commitImport(excalidrawAPI, file, fileHandlePromise);
     } finally {
       importingRef.current = false;
+      if (mountedRef.current) {
+        setImporting(false);
+      }
     }
   };
 
@@ -116,10 +125,11 @@ export const LauncherSplash = ({
     }
     if (result.type === MIME_TYPES.excalidraw) {
       const { elements, appState, files } = result.data;
+      const { zoom, scrollX, scrollY } = excalidrawAPI.getAppState();
       excalidrawAPI.addFiles(Object.values(files ?? {}));
       excalidrawAPI.updateScene({
         elements,
-        appState,
+        appState: { ...appState, zoom, scrollX, scrollY },
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
       const visibleElements = elements.filter((element) => !element.isDeleted);
@@ -236,7 +246,7 @@ export const LauncherSplash = ({
         <button
           type="button"
           className="launcher-splash__chip launcher-splash__chip--browse"
-          disabled={disabled}
+          disabled={disabled || importing}
           onClick={() => fileInputRef.current?.click()}
         >
           {LAUNCHER_STRINGS.browse}

@@ -7,6 +7,8 @@ export const LAUNCHER_STRINGS = {
   dragOverHint: "Drop to open the .excalidraw file",
   libraryFileMessage: "That's a library file — open it from the Library panel.",
   templateLoaded: (name: string) => `Loaded the “${name}” template.`,
+  importBusy: (fileName: string) =>
+    `Still opening the previous file — try “${fileName}” again once it loads.`,
   fileOpened: (fileName: string) => `Opened “${fileName}”.`,
   noMatch: (query: string) =>
     `No template matches “${query}”. Try one of the templates below.`,

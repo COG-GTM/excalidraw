@@ -114,6 +114,7 @@ export const loadTemplateIntoScene = (
 
   api.updateScene({
     elements,
+    appState: { fileHandle: null, name: null },
     captureUpdate: CaptureUpdateAction.IMMEDIATELY,
   });
   api.setViewport({

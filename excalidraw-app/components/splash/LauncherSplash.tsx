@@ -10,6 +10,7 @@ import {
   getFileHandle,
   loadSceneOrLibraryFromBlob,
 } from "@excalidraw/excalidraw/data/blob";
+import { fileOpen } from "@excalidraw/excalidraw/data/filesystem";
 import { useSetAtom } from "@excalidraw/excalidraw/editor-jotai";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -42,7 +43,6 @@ export const LauncherSplash = ({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(false);
 
   const disabled = !excalidrawAPI;
@@ -163,6 +163,19 @@ export const LauncherSplash = ({
     importFile(files[0], getFileHandle(event));
   };
 
+  const browse = async () => {
+    let file;
+    try {
+      file = await fileOpen({ description: LAUNCHER_STRINGS.browse });
+    } catch (error: any) {
+      if (error?.name !== "AbortError" && mountedRef.current) {
+        setStatus(LAUNCHER_STRINGS.fileOpenError);
+      }
+      return;
+    }
+    importFile(file, Promise.resolve(file.handle ?? null));
+  };
+
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     const files = Array.from(event.clipboardData.files);
     if (files.length === 1 && isExcalidrawFile(files[0])) {
@@ -231,24 +244,11 @@ export const LauncherSplash = ({
           type="button"
           className="launcher-splash__chip launcher-splash__chip--browse"
           disabled={disabled}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={browse}
         >
           {LAUNCHER_STRINGS.browse}
         </button>
       </div>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".excalidraw,application/vnd.excalidraw+json"
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            importFile(file);
-          }
-          event.target.value = "";
-        }}
-      />
       <div className="launcher-splash__hint">
         {dragOver
           ? LAUNCHER_STRINGS.dragOverHint

@@ -166,7 +166,10 @@ export const LauncherSplash = ({
   const browse = async () => {
     let file;
     try {
-      file = await fileOpen({ description: LAUNCHER_STRINGS.browse });
+      file = await fileOpen({
+        description: LAUNCHER_STRINGS.browse,
+        extensions: ["excalidraw"],
+      });
     } catch (error: any) {
       if (error?.name !== "AbortError" && mountedRef.current) {
         setStatus(LAUNCHER_STRINGS.fileOpenError);

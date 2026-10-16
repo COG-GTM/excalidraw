@@ -35,7 +35,9 @@ export const AISplash = ({
   }
 
   const openTTD = (prompt: string) => {
-    setChatHistory((prev) => ({ ...prev, currentPrompt: prompt }));
+    if (prompt) {
+      setChatHistory((prev) => ({ ...prev, currentPrompt: prompt }));
+    }
     trackEvent("ai", "dialog open", "ttd");
     setAppState({ openDialog: { name: "ttd", tab: "text-to-diagram" } });
   };

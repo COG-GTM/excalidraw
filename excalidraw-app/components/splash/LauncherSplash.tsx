@@ -45,6 +45,7 @@ export const LauncherSplash = ({
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(false);
+  const importingRef = useRef(false);
 
   const disabled = !excalidrawAPI;
 
@@ -79,9 +80,22 @@ export const LauncherSplash = ({
     file: File,
     fileHandlePromise?: Promise<FileSystemFileHandle | null>,
   ) => {
-    if (!excalidrawAPI) {
+    if (!excalidrawAPI || importingRef.current) {
       return;
     }
+    importingRef.current = true;
+    try {
+      await commitImport(excalidrawAPI, file, fileHandlePromise);
+    } finally {
+      importingRef.current = false;
+    }
+  };
+
+  const commitImport = async (
+    excalidrawAPI: ExcalidrawImperativeAPI,
+    file: File,
+    fileHandlePromise?: Promise<FileSystemFileHandle | null>,
+  ) => {
     let result;
     try {
       const fileHandle = (await fileHandlePromise) ?? null;
@@ -102,19 +116,10 @@ export const LauncherSplash = ({
     }
     if (result.type === MIME_TYPES.excalidraw) {
       const { elements, appState, files } = result.data;
-      const current = excalidrawAPI.getAppState();
       excalidrawAPI.addFiles(Object.values(files ?? {}));
       excalidrawAPI.updateScene({
         elements,
-        appState: {
-          viewBackgroundColor:
-            appState?.viewBackgroundColor ?? current.viewBackgroundColor,
-          gridSize: appState?.gridSize ?? current.gridSize,
-          gridStep: appState?.gridStep ?? current.gridStep,
-          gridModeEnabled: appState?.gridModeEnabled ?? current.gridModeEnabled,
-          name: appState?.name ?? current.name,
-          fileHandle: appState?.fileHandle ?? null,
-        },
+        appState,
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
       const visibleElements = elements.filter((element) => !element.isDeleted);

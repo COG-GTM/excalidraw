@@ -15,11 +15,13 @@ import { act, render } from "../../tests/test-utils";
 
 const { h } = window;
 
+const getOwnerDocument = () => h.app.ownerDocument;
+
 const getFontList = () =>
-  document.querySelector<HTMLElement>(".dropdown-menu.fonts");
+  getOwnerDocument().querySelector<HTMLElement>(".dropdown-menu.fonts");
 
 const getFontPopover = () =>
-  document.querySelector<HTMLElement>(".properties-content")!;
+  getOwnerDocument().querySelector<HTMLElement>(".properties-content")!;
 
 const getSearchInput = () =>
   getFontPopover().querySelector<HTMLInputElement>(".QuickSearch__input")!;
@@ -303,11 +305,11 @@ describe("FontPicker", () => {
       act(() => {
         getFontButton("Virgil").focus();
       });
-      expect(document.activeElement).not.toBe(getSearchInput());
+      expect(getOwnerDocument().activeElement).not.toBe(getSearchInput());
 
       pressKey("F", { shiftKey: true });
 
-      expect(document.activeElement).toBe(getSearchInput());
+      expect(getOwnerDocument().activeElement).toBe(getSearchInput());
       expect(h.state.openPopup).toBe("fontFamily");
     });
   });
@@ -341,11 +343,14 @@ describe("FontPicker", () => {
       // the wysiwyg binds its "don't submit on properties interaction"
       // pointerdown listener in the next animation frame
       await act(
-        () => new Promise((resolve) => window.requestAnimationFrame(resolve)),
+        () =>
+          new Promise((resolve) =>
+            h.app.ownerWindow.requestAnimationFrame(resolve),
+          ),
       );
 
       // interacting with the properties menu must not submit the editor
-      const trigger = document.querySelector<HTMLElement>(
+      const trigger = getOwnerDocument().querySelector<HTMLElement>(
         '[data-testid="font-family-show-fonts"]',
       )!;
       fireEvent.pointerDown(trigger);

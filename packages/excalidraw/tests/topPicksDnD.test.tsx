@@ -177,12 +177,12 @@ const startDrag = (source: HTMLElement, x: number, y: number) => {
   const startY = sourceRect.top + sourceRect.height / 2;
   dispatchPointer("pointerdown", source, startX, startY);
   advance(150);
-  dispatchPointer("pointermove", document.body, x, y);
+  dispatchPointer("pointermove", source.ownerDocument.body, x, y);
 };
 
 const drag = (source: HTMLElement, x: number, y: number) => {
   startDrag(source, x, y);
-  dispatchPointer("pointerup", document.body, x, y);
+  dispatchPointer("pointerup", source.ownerDocument.body, x, y);
 };
 
 const mockDnDEnvironment = () => {

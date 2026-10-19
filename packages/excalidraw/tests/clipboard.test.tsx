@@ -7,7 +7,23 @@ import { KEYS, arrayToMap, getLineHeight } from "@excalidraw/common";
 
 import { getElementBounds } from "@excalidraw/element";
 
-import { createPasteEvent, serializeAsClipboardJSON } from "../clipboard";
+import type { ExcalidrawElement } from "@excalidraw/element/types";
+
+import {
+  actionCopyAsPng,
+  actionCopyAsSvg,
+  actionPaste,
+  copyText,
+} from "../actions/actionClipboard";
+import {
+  copyBlobToClipboardAsPng,
+  copyTextToSystemClipboard,
+  createPasteEvent,
+  readSystemClipboard,
+  serializeAsClipboardJSON,
+} from "../clipboard";
+import { exportCanvas } from "../data/index";
+import { t } from "../i18n";
 
 import { Excalidraw } from "../index";
 
@@ -23,7 +39,16 @@ import {
 
 import type { NormalizedZoomValue } from "../types";
 
+import type { Action, ActionResult } from "../actions/types";
+import type { AppClassProperties, AppState } from "../types";
+
 const { h } = window;
+
+const clipboardMocks = vi.hoisted(() => ({
+  isFirefox: false,
+  supportsWriteText: true,
+  supportsBlob: true,
+}));
 
 const mouse = new Pointer("mouse");
 
@@ -35,11 +60,42 @@ vi.mock("@excalidraw/common", async (importOriginal) => {
     __esmodule: true,
     ...module,
     isDarwin: false,
+    get isFirefox() {
+      return clipboardMocks.isFirefox;
+    },
     KEYS: {
       ...module.KEYS,
       CTRL_OR_CMD: "ctrlKey",
     },
     throttleRAF: mockThrottleRAF,
+  };
+});
+
+vi.mock("../clipboard", async (importOriginal) => {
+  const module = await importOriginal<typeof import("../clipboard")>();
+
+  return {
+    __esmodule: true,
+    ...module,
+    get probablySupportsClipboardWriteText() {
+      return clipboardMocks.supportsWriteText;
+    },
+    get probablySupportsClipboardBlob() {
+      return clipboardMocks.supportsBlob;
+    },
+    readSystemClipboard: vi.fn(module.readSystemClipboard),
+    copyTextToSystemClipboard: vi.fn(module.copyTextToSystemClipboard),
+    copyBlobToClipboardAsPng: vi.fn(module.copyBlobToClipboardAsPng),
+  };
+});
+
+vi.mock("../data/index", async (importOriginal) => {
+  const module = await importOriginal<typeof import("../data/index")>();
+
+  return {
+    __esmodule: true,
+    ...module,
+    exportCanvas: vi.fn(module.exportCanvas),
   };
 });
 
@@ -642,6 +698,367 @@ describe("clipboard - pasting mermaid definition", () => {
           expect.objectContaining({ type: "text", text: "A" }),
         ]),
       );
+    });
+  });
+});
+
+describe("clipboard actions", () => {
+  const performAction = async (
+    action: Action,
+    appState: AppState = h.state,
+    app: AppClassProperties = h.app as unknown as AppClassProperties,
+  ): Promise<ActionResult> =>
+    action.perform(
+      h.app.scene.getElementsIncludingDeleted(),
+      appState,
+      null,
+      app,
+    );
+
+  const checkPredicate = (
+    action: Action,
+    elements: readonly ExcalidrawElement[],
+  ) =>
+    action.predicate!(
+      elements,
+      h.state,
+      {},
+      h.app as unknown as AppClassProperties,
+    );
+
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    clipboardMocks.isFirefox = false;
+    clipboardMocks.supportsWriteText = true;
+    clipboardMocks.supportsBlob = true;
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    vi.mocked(readSystemClipboard).mockReset();
+    vi.mocked(copyTextToSystemClipboard).mockReset();
+    vi.mocked(copyBlobToClipboardAsPng).mockReset();
+    vi.mocked(exportCanvas).mockReset();
+    vi.restoreAllMocks();
+  });
+
+  describe("paste", () => {
+    it.each(["AbortError", "NotAllowedError"])(
+      "should silently bail out when clipboard read rejects with %s",
+      async (name) => {
+        const error = new Error("denied");
+        error.name = name;
+        vi.mocked(readSystemClipboard).mockRejectedValueOnce(error);
+        const pasteSpy = vi.spyOn(h.app, "pasteFromClipboard");
+
+        const result = await performAction(actionPaste);
+
+        expect(result).toBe(false);
+        expect(pasteSpy).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+      },
+    );
+
+    it("should set generic read error message when clipboard read fails", async () => {
+      vi.mocked(readSystemClipboard).mockRejectedValueOnce(
+        new TypeError("read failed"),
+      );
+
+      const result = await performAction(actionPaste);
+
+      expect(result).not.toBe(false);
+      expect(result && result.appState?.errorMessage).toBe(
+        t("errors.asyncPasteFailedOnRead"),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "actionPaste TypeError: read failed",
+      );
+    });
+
+    it("should set Firefox hint when clipboard read fails on Firefox", async () => {
+      clipboardMocks.isFirefox = true;
+      vi.mocked(readSystemClipboard).mockRejectedValueOnce(
+        new TypeError("read failed"),
+      );
+
+      const result = await performAction(actionPaste);
+
+      expect(result && result.appState?.errorMessage).toBe(
+        t("hints.firefox_clipboard_write"),
+      );
+    });
+
+    it("should surface error via executeAction when clipboard read fails", async () => {
+      vi.mocked(readSystemClipboard).mockRejectedValueOnce(
+        new Error("read failed"),
+      );
+
+      h.app.actionManager.executeAction(actionPaste);
+
+      await waitFor(() => {
+        expect(h.state.errorMessage).toBe(t("errors.asyncPasteFailedOnRead"));
+      });
+      expect(h.elements.length).toBe(0);
+    });
+
+    it("should set parse error message when pasting clipboard data throws", async () => {
+      vi.mocked(readSystemClipboard).mockResolvedValueOnce({
+        "text/plain": "hello",
+      });
+      const parseError = new Error("parse failed");
+      vi.spyOn(h.app, "pasteFromClipboard").mockImplementationOnce(() => {
+        throw parseError;
+      });
+
+      const result = await performAction(actionPaste);
+
+      expect(result && result.appState?.errorMessage).toBe(
+        t("errors.asyncPasteFailedOnParse"),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(parseError);
+    });
+
+    it("should paste clipboard contents read from the system clipboard", async () => {
+      vi.mocked(readSystemClipboard).mockResolvedValueOnce({
+        "text/plain": "hello",
+      });
+      const pasteSpy = vi.spyOn(h.app, "pasteFromClipboard");
+
+      const result = await performAction(actionPaste);
+
+      expect(result && result.appState).toBeUndefined();
+      expect(pasteSpy).toHaveBeenCalledTimes(1);
+      const event = pasteSpy.mock.calls[0][0] as ClipboardEvent;
+      expect(event.clipboardData?.getData("text/plain")).toBe("hello");
+    });
+  });
+
+  describe("copyAsSvg", () => {
+    it("should no-op when there is no canvas", async () => {
+      const result = await performAction(actionCopyAsSvg, h.state, {
+        ...h.app,
+        canvas: null,
+      } as unknown as AppClassProperties);
+
+      expect(result).toEqual({ captureUpdate: expect.anything() });
+      expect(exportCanvas).not.toHaveBeenCalled();
+    });
+
+    it("should copy SVG of selection and show toast", async () => {
+      const rectangle = API.createElement({ type: "rectangle" });
+      API.setElements([rectangle]);
+      API.setSelectedElements([rectangle]);
+      vi.mocked(copyTextToSystemClipboard).mockResolvedValueOnce(undefined);
+
+      h.app.actionManager.executeAction(actionCopyAsSvg);
+
+      await waitFor(() => {
+        expect(h.state.toast?.message).toBe(
+          t("toast.copyToClipboardAsSvg", {
+            exportSelection: t("toast.selection"),
+            exportColorScheme: t("buttons.lightMode"),
+          }),
+        );
+      });
+      expect(exportCanvas).toHaveBeenCalledWith(
+        "clipboard-svg",
+        [expect.objectContaining({ id: rectangle.id })],
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ exportingFrame: null }),
+      );
+      expect(copyTextToSystemClipboard).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(copyTextToSystemClipboard).mock.calls[0][0]).toMatch(
+        /^<svg/,
+      );
+      expect(h.state.errorMessage).toBe(null);
+    });
+
+    it("should mention canvas and dark mode in toast when nothing is selected", async () => {
+      API.setElements([API.createElement({ type: "rectangle" })]);
+      vi.mocked(copyTextToSystemClipboard).mockResolvedValueOnce(undefined);
+
+      const result = await performAction(actionCopyAsSvg, {
+        ...h.state,
+        exportWithDarkMode: true,
+      });
+
+      expect(result && result.appState?.toast?.message).toBe(
+        t("toast.copyToClipboardAsSvg", {
+          exportSelection: t("toast.canvas"),
+          exportColorScheme: t("buttons.darkMode"),
+        }),
+      );
+      expect(exportCanvas).toHaveBeenCalledWith(
+        "clipboard-svg",
+        expect.anything(),
+        expect.objectContaining({ exportWithDarkMode: true }),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("should set errorMessage when writing to the clipboard fails", async () => {
+      API.setElements([API.createElement({ type: "rectangle" })]);
+      vi.mocked(copyTextToSystemClipboard).mockRejectedValueOnce(
+        new Error("write failed"),
+      );
+
+      h.app.actionManager.executeAction(actionCopyAsSvg);
+
+      await waitFor(() => {
+        expect(h.state.errorMessage).toBe(
+          t("errors.copyToSystemClipboardFailed"),
+        );
+      });
+      expect(h.state.toast).toBe(null);
+    });
+
+    it("should set errorMessage when canvas is empty", async () => {
+      const result = await performAction(actionCopyAsSvg);
+
+      expect(result && result.appState?.errorMessage).toBe(
+        t("alerts.cannotExportEmptyCanvas"),
+      );
+    });
+
+    it("predicate should require elements and clipboard writeText support", () => {
+      const elements = [API.createElement({ type: "rectangle" })];
+
+      expect(checkPredicate(actionCopyAsSvg, elements)).toBe(true);
+      expect(checkPredicate(actionCopyAsSvg, [])).toBe(false);
+
+      clipboardMocks.supportsWriteText = false;
+      expect(checkPredicate(actionCopyAsSvg, elements)).toBe(false);
+    });
+  });
+
+  describe("copyAsPng", () => {
+    it("should no-op when there is no canvas", async () => {
+      const result = await performAction(actionCopyAsPng, h.state, {
+        ...h.app,
+        canvas: null,
+      } as unknown as AppClassProperties);
+
+      expect(result).toEqual({ captureUpdate: expect.anything() });
+      expect(exportCanvas).not.toHaveBeenCalled();
+    });
+
+    it("should copy PNG of selection and show toast", async () => {
+      const rectangle = API.createElement({ type: "rectangle" });
+      API.setElements([rectangle]);
+      API.setSelectedElements([rectangle]);
+      vi.mocked(copyBlobToClipboardAsPng).mockResolvedValueOnce(undefined);
+
+      h.app.actionManager.executeAction(actionCopyAsPng);
+
+      await waitFor(() => {
+        expect(h.state.toast?.message).toBe(
+          t("toast.copyToClipboardAsPng", {
+            exportSelection: t("toast.selection"),
+            exportColorScheme: t("buttons.lightMode"),
+          }),
+        );
+      });
+      expect(exportCanvas).toHaveBeenCalledWith(
+        "clipboard",
+        [expect.objectContaining({ id: rectangle.id })],
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ exportingFrame: null }),
+      );
+      expect(copyBlobToClipboardAsPng).toHaveBeenCalledTimes(1);
+      expect(h.state.errorMessage).toBe(null);
+    });
+
+    it("should set canvas-too-big errorMessage when blob export fails", async () => {
+      API.setElements([API.createElement({ type: "rectangle" })]);
+      const error = new Error("Canvas too big");
+      error.name = "CANVAS_POSSIBLY_TOO_BIG";
+      vi.mocked(copyBlobToClipboardAsPng).mockRejectedValueOnce(error);
+      const consoleWarnSpy = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
+
+      h.app.actionManager.executeAction(actionCopyAsPng);
+
+      await waitFor(() => {
+        expect(h.state.errorMessage).toBe(t("canvasError.canvasTooBig"));
+      });
+      expect(h.state.toast).toBe(null);
+      consoleWarnSpy.mockRestore();
+    });
+
+    it("should set errorMessage when export throws", async () => {
+      API.setElements([API.createElement({ type: "rectangle" })]);
+      vi.mocked(exportCanvas).mockRejectedValueOnce(new Error("export failed"));
+
+      const result = await performAction(actionCopyAsPng);
+
+      expect(result && result.appState?.errorMessage).toBe("export failed");
+      expect(result && result.appState?.toast).toBeFalsy();
+    });
+
+    it("predicate should require elements and clipboard blob support", () => {
+      const elements = [API.createElement({ type: "rectangle" })];
+
+      expect(checkPredicate(actionCopyAsPng, elements)).toBe(true);
+      expect(checkPredicate(actionCopyAsPng, [])).toBe(false);
+
+      clipboardMocks.supportsBlob = false;
+      expect(checkPredicate(actionCopyAsPng, elements)).toBe(false);
+    });
+  });
+
+  describe("copyText", () => {
+    it("should copy text of selected text elements", () => {
+      const text1 = API.createElement({ type: "text", text: "hello" });
+      const text2 = API.createElement({ type: "text", text: "world" });
+      const rectangle = API.createElement({ type: "rectangle" });
+      API.setElements([text1, text2, rectangle]);
+      API.setSelectedElements([text1, text2, rectangle]);
+      vi.mocked(copyTextToSystemClipboard).mockResolvedValueOnce(undefined);
+
+      performAction(copyText);
+
+      expect(copyTextToSystemClipboard).toHaveBeenCalledWith("hello\n\nworld");
+    });
+
+    it("should throw a user-facing error when copying fails", () => {
+      const text = API.createElement({ type: "text", text: "hello" });
+      API.setElements([text]);
+      API.setSelectedElements([text]);
+      vi.mocked(copyTextToSystemClipboard).mockImplementationOnce(() => {
+        throw new Error("write failed");
+      });
+
+      // copyText.perform is synchronous, so the error is thrown, not rejected
+      expect(() =>
+        copyText.perform(
+          h.app.scene.getElementsIncludingDeleted(),
+          h.state,
+          null,
+          h.app as unknown as AppClassProperties,
+        ),
+      ).toThrow(t("errors.copyToSystemClipboardFailed"));
+    });
+
+    it("predicate should require a selected text element and writeText support", () => {
+      const text = API.createElement({ type: "text", text: "hello" });
+      const rectangle = API.createElement({ type: "rectangle" });
+      API.setElements([text, rectangle]);
+      const elements = h.app.scene.getElementsIncludingDeleted();
+
+      API.setSelectedElements([rectangle]);
+      expect(checkPredicate(copyText, elements)).toBe(false);
+
+      API.setSelectedElements([text]);
+      expect(checkPredicate(copyText, elements)).toBe(true);
+
+      clipboardMocks.supportsWriteText = false;
+      expect(checkPredicate(copyText, elements)).toBe(false);
     });
   });
 });

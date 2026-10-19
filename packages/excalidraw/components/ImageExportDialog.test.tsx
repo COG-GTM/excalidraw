@@ -45,20 +45,22 @@ vi.mock("@excalidraw/utils/export", async (importOriginal) => {
 
 const PREVIEW_CANVAS_CLASS = "ImageExportModal__preview__canvas";
 
+const getOwnerDocument = () => h.app.ownerDocument;
+
 const getSwitch = (name: string) =>
-  document.querySelector<HTMLInputElement>(
+  getOwnerDocument().querySelector<HTMLInputElement>(
     `.ImageExportModal input[type="checkbox"][name="${name}"]`,
   );
 
 const getScaleRadios = () =>
   Array.from(
-    document.querySelectorAll<HTMLInputElement>(
+    getOwnerDocument().querySelectorAll<HTMLInputElement>(
       '.ImageExportModal input[type="radio"][name="exportScale"]',
     ),
   );
 
 const getButton = (label: string) =>
-  document.querySelector<HTMLButtonElement>(
+  getOwnerDocument().querySelector<HTMLButtonElement>(
     `.ImageExportModal button[aria-label="${label}"]`,
   );
 
@@ -68,8 +70,46 @@ const openImageExportDialog = async (container: HTMLElement) => {
     container.querySelector("[data-testid='image-export-button']")!,
   );
   await waitFor(() => {
-    expect(document.querySelector(".ImageExportModal")).not.toBeNull();
+    expect(
+      getOwnerDocument().querySelector(".ImageExportModal"),
+    ).not.toBeNull();
   });
+};
+
+const getPreview = () =>
+  getOwnerDocument().querySelector<HTMLElement>(`.${PREVIEW_CANVAS_CLASS}`);
+
+const createPreviewCanvas = (blob: Blob | null) => {
+  const canvas = getOwnerDocument().createElement("canvas");
+  canvas.toBlob = (callback: BlobCallback) => callback(blob);
+  return canvas;
+};
+
+// jsdom reports 0 for layout sizes, which makes the preview effect bail out
+const mockPreviewDimensions = () => {
+  const { HTMLElement } = h.app.ownerWindow;
+  const offsetWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "offsetWidth",
+  )!;
+  const offsetHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "offsetHeight",
+  )!;
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
+    function (this: HTMLElement) {
+      return this.classList.contains(PREVIEW_CANVAS_CLASS)
+        ? 400
+        : offsetWidth.get!.call(this);
+    },
+  );
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
+    function (this: HTMLElement) {
+      return this.classList.contains(PREVIEW_CANVAS_CLASS)
+        ? 300
+        : offsetHeight.get!.call(this);
+    },
+  );
 };
 
 describe("<ImageExportDialog/>", () => {
@@ -86,7 +126,8 @@ describe("<ImageExportDialog/>", () => {
 
   const renderWithScene = async ({
     selectFirst = false,
-  }: { selectFirst?: boolean } = {}) => {
+    beforeOpen,
+  }: { selectFirst?: boolean; beforeOpen?: () => void } = {}) => {
     const { container } = await render(<Excalidraw />);
 
     const rect1 = API.createElement({
@@ -114,6 +155,7 @@ describe("<ImageExportDialog/>", () => {
       .spyOn(h.app, "onExportImage")
       .mockResolvedValue(undefined) as any;
 
+    beforeOpen?.();
     await openImageExportDialog(container);
 
     return { container, rect1, rect2 };
@@ -129,7 +171,9 @@ describe("<ImageExportDialog/>", () => {
           exportScale: 2,
         });
       });
-      await openImageExportDialog(document.querySelector(".excalidraw")!);
+      await openImageExportDialog(
+        getOwnerDocument().querySelector(".excalidraw")!,
+      );
 
       expect(getSwitch("exportBackgroundSwitch")?.checked).toBe(false);
       expect(getSwitch("exportEmbedSwitch")?.checked).toBe(true);
@@ -210,7 +254,7 @@ describe("<ImageExportDialog/>", () => {
       await renderWithScene();
       expect(getSwitch("exportOnlySelected")).toBeNull();
       expect(
-        document.querySelector(".ImageExportModal")?.textContent,
+        getOwnerDocument().querySelector(".ImageExportModal")?.textContent,
       ).not.toContain(t("imageExportDialog.label.onlySelected"));
     });
 
@@ -297,51 +341,32 @@ describe("<ImageExportDialog/>", () => {
   });
 
   describe("preview", () => {
-    beforeEach(() => {
-      const offsetWidth = Object.getOwnPropertyDescriptor(
-        HTMLElement.prototype,
-        "offsetWidth",
-      )!;
-      const offsetHeight = Object.getOwnPropertyDescriptor(
-        HTMLElement.prototype,
-        "offsetHeight",
-      )!;
-      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
-        function (this: HTMLElement) {
-          return this.classList.contains(PREVIEW_CANVAS_CLASS)
-            ? 400
-            : offsetWidth.get!.call(this);
-        },
-      );
-      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
-        function (this: HTMLElement) {
-          return this.classList.contains(PREVIEW_CANVAS_CLASS)
-            ? 300
-            : offsetHeight.get!.call(this);
-        },
-      );
-    });
-
     it("renders the exported canvas into the preview", async () => {
-      const previewCanvas = document.createElement("canvas");
-      previewCanvas.toBlob = (callback: BlobCallback) =>
-        callback(new Blob(["png"], { type: "image/png" }));
-      const exportToCanvasMock = vi.fn().mockResolvedValue(previewCanvas);
+      let previewCanvas: HTMLCanvasElement | null = null;
+      const exportToCanvasMock = vi.fn(async () => {
+        previewCanvas = createPreviewCanvas(
+          new Blob(["png"], { type: "image/png" }),
+        );
+        return previewCanvas;
+      });
       mocks.exportToCanvas = exportToCanvasMock;
 
-      await renderWithScene({ selectFirst: true });
+      await renderWithScene({
+        selectFirst: true,
+        beforeOpen: mockPreviewDimensions,
+      });
 
       await waitFor(() => {
-        expect(
-          document.querySelector(`.${PREVIEW_CANVAS_CLASS}`)?.firstChild,
-        ).toBe(previewCanvas);
+        expect(getPreview()?.firstChild).not.toBeNull();
+        expect(getPreview()?.firstChild).toBe(previewCanvas);
       });
-      expect(
-        document.querySelector(`.${PREVIEW_CANVAS_CLASS}`)?.textContent,
-      ).not.toContain(t("canvasError.cannotShowPreview"));
+      expect(getPreview()?.textContent).not.toContain(
+        t("canvasError.cannotShowPreview"),
+      );
 
-      const { elements, maxWidthOrHeight } =
-        exportToCanvasMock.mock.calls.at(-1)![0];
+      const { elements, maxWidthOrHeight } = (
+        exportToCanvasMock.mock.calls.at(-1) as any[]
+      )[0];
       expect(elements.map((el: any) => el.id)).toEqual(["rect1"]);
       expect(maxWidthOrHeight).toBe(400);
     });
@@ -350,25 +375,21 @@ describe("<ImageExportDialog/>", () => {
       const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const previewCanvas = document.createElement("canvas");
       // canvas.toBlob yields `null` when the canvas exceeds browser limits,
       // which canvasToBlob() turns into a CANVAS_POSSIBLY_TOO_BIG error
-      previewCanvas.toBlob = (callback: BlobCallback) => callback(null);
-      mocks.exportToCanvas = vi.fn().mockResolvedValue(previewCanvas);
+      mocks.exportToCanvas = vi.fn(async () => createPreviewCanvas(null));
 
-      await renderWithScene();
+      await renderWithScene({ beforeOpen: mockPreviewDimensions });
 
       await waitFor(() => {
-        const preview = document.querySelector(`.${PREVIEW_CANVAS_CLASS}`)!;
+        const preview = getPreview()!;
         expect(preview.textContent).toContain(
           t("canvasError.cannotShowPreview"),
         );
         expect(preview.textContent).toContain(t("canvasError.canvasTooBig"));
         expect(preview.textContent).toContain(t("canvasError.canvasTooBigTip"));
       });
-      expect(
-        document.querySelector(`.${PREVIEW_CANVAS_CLASS} canvas`),
-      ).toBeNull();
+      expect(getPreview()?.querySelector("canvas")).toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.objectContaining({ message: t("canvasError.canvasTooBig") }),
       );
@@ -380,12 +401,12 @@ describe("<ImageExportDialog/>", () => {
         .fn()
         .mockRejectedValue(new Error("export failed"));
 
-      await renderWithScene();
+      await renderWithScene({ beforeOpen: mockPreviewDimensions });
 
       await waitFor(() => {
-        expect(
-          document.querySelector(`.${PREVIEW_CANVAS_CLASS}`)?.textContent,
-        ).toContain(t("canvasError.cannotShowPreview"));
+        expect(getPreview()?.textContent).toContain(
+          t("canvasError.cannotShowPreview"),
+        );
       });
     });
   });

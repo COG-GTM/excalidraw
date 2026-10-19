@@ -1,8 +1,7 @@
-import { webcrypto } from "node:crypto";
-
 import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
 import { compressData } from "@excalidraw/excalidraw/data/encode";
 import {
+  decryptData,
   encryptData,
   generateEncryptionKey,
 } from "@excalidraw/excalidraw/data/encryption";
@@ -102,12 +101,6 @@ vi.mock("firebase/storage", () => ({
   uploadBytes: storageMock.uploadBytes,
 }));
 
-// use Node's WebCrypto so encryption round-trips are real
-Object.defineProperty(window, "crypto", {
-  value: webcrypto,
-  configurable: true,
-});
-
 const appState = getDefaultAppState() as AppState;
 
 const createSocket = () => ({ id: Math.random().toString() } as any as Socket);
@@ -170,23 +163,10 @@ const storeScene = async (
 
 const decryptStoredScene = async (roomId: string, roomKey: string) => {
   const stored = firestoreMock.store.get(`scenes/${roomId}`);
-  const key = await window.crypto.subtle.importKey(
-    "jwk",
-    {
-      alg: "A128GCM",
-      ext: true,
-      k: roomKey,
-      key_ops: ["encrypt", "decrypt"],
-      kty: "oct",
-    },
-    { name: "AES-GCM", length: 128 },
-    false,
-    ["decrypt"],
-  );
-  const decrypted = await window.crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: stored.iv.toUint8Array() },
-    key,
+  const decrypted = await decryptData(
+    stored.iv.toUint8Array(),
     stored.ciphertext.toUint8Array(),
+    roomKey,
   );
   return {
     sceneVersion: stored.sceneVersion as number,

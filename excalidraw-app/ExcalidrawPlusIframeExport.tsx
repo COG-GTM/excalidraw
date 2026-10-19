@@ -39,7 +39,7 @@ type MESSAGE_SCENE_DATA = {
 type MESSAGE_FROM_EDITOR = MESSAGE_ERROR | MESSAGE_SCENE_DATA | MESSAGE_READY;
 // -----------------------------------------------------------------------------
 
-const parseSceneData = async ({
+export const parseSceneData = async ({
   rawElementsString,
   rawAppStateString,
 }: {
@@ -86,7 +86,7 @@ const parseSceneData = async ({
   }
 };
 
-const verifyJWT = async ({
+export const verifyJWT = async ({
   token,
   publicKey,
 }: {

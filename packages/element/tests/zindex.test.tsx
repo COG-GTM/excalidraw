@@ -1,5 +1,7 @@
 import { reseed } from "@excalidraw/common";
 
+import { pointFrom } from "@excalidraw/math";
+
 import {
   actionSendBackward,
   actionBringForward,
@@ -20,9 +22,13 @@ import {
 
 import type { AppState } from "@excalidraw/excalidraw/types";
 
+import type { GlobalPoint } from "@excalidraw/math";
+
 import { selectGroupsForSelectedElements } from "../src/groups";
+import { moveArrowAboveBindable } from "../src/zindex";
 
 import type {
+  ExcalidrawArrowElement,
   ExcalidrawElement,
   ExcalidrawFrameElement,
   ExcalidrawSelectionElement,
@@ -1694,5 +1700,148 @@ describe("z-index reordering with inconsistent group-editing state", () => {
       appState: { editingGroupId: "g1" },
       operations: [[actionBringToFront, ["A", "C", "X", "Y", "R"]]],
     });
+  });
+});
+
+describe("moveArrowAboveBindable", () => {
+  beforeEach(async () => {
+    await render(<Excalidraw />);
+  });
+
+  const setupScene = (
+    elements: Parameters<typeof populateElements>[0],
+    arrowPosition: number,
+  ) => {
+    populateElements(elements);
+    const arrow = API.createElement({
+      type: "arrow",
+      id: "arrow",
+      x: 500,
+      y: 500,
+      width: 100,
+      height: 0,
+    }) as ExcalidrawArrowElement;
+    const ordered = [...h.elements];
+    ordered.splice(arrowPosition, 0, arrow);
+    API.setElements(ordered);
+    return h.elements.find((el) => el.id === "arrow") as ExcalidrawArrowElement;
+  };
+
+  const callMove = (
+    arrow: ExcalidrawArrowElement,
+    point: GlobalPoint,
+    hitId?: string,
+  ) => {
+    const elements = h.scene.getElementsIncludingDeleted();
+    const hit = hitId
+      ? h.scene.getNonDeletedElementsMap().get(hitId)
+      : undefined;
+    let result!: ReturnType<typeof moveArrowAboveBindable>;
+    act(() => {
+      result = moveArrowAboveBindable(
+        point,
+        arrow,
+        elements,
+        h.scene.getNonDeletedElementsMap(),
+        h.scene,
+        hit,
+      );
+    });
+    return { elements, result };
+  };
+
+  const ids = () => h.elements.map((el) => el.id);
+
+  it("moves an arrow below the hit element directly above it", () => {
+    const arrow = setupScene([{ id: "A" }, { id: "R" }, { id: "B" }], 0);
+    expect(ids()).toEqual(["arrow", "A", "R", "B"]);
+
+    const replaceSpy = vi.spyOn(h.scene, "replaceAllElements");
+    const { elements, result } = callMove(arrow, pointFrom(150, 150), "R");
+
+    expect(replaceSpy).toHaveBeenCalledTimes(1);
+    expect(ids()).toEqual(["A", "R", "arrow", "B"]);
+    // returns the original (pre-reorder) array while mutating the scene
+    expect(result).toBe(elements);
+    expect(result.map((el) => el.id)).toEqual(["arrow", "A", "R", "B"]);
+  });
+
+  it("keeps fractional indices valid after reordering", () => {
+    const arrow = setupScene([{ id: "A" }, { id: "R" }], 0);
+
+    callMove(arrow, pointFrom(150, 150), "R");
+
+    const indices = h.elements.map((el) => el.index!);
+    expect(indices).toEqual([...indices].sort());
+    expect(new Set(indices).size).toBe(indices.length);
+  });
+
+  it("leaves the order unchanged when the arrow is already above", () => {
+    const arrow = setupScene([{ id: "A" }, { id: "R" }, { id: "B" }], 3);
+    expect(ids()).toEqual(["A", "R", "B", "arrow"]);
+
+    const replaceSpy = vi.spyOn(h.scene, "replaceAllElements");
+    const { elements, result } = callMove(arrow, pointFrom(150, 150), "R");
+
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(ids()).toEqual(["A", "R", "B", "arrow"]);
+    expect(result).toBe(elements);
+  });
+
+  it("places the arrow above the lowest of container and bound text when hitting the container", () => {
+    const arrow = setupScene(
+      [{ id: "A" }, { id: "C" }, { id: "T", containerId: "C" }],
+      0,
+    );
+    expect(ids()).toEqual(["arrow", "A", "C", "T"]);
+
+    callMove(arrow, pointFrom(150, 150), "C");
+
+    expect(ids()).toEqual(["A", "C", "arrow", "T"]);
+  });
+
+  it("places the arrow above the lowest of container and bound text when hitting the bound text", () => {
+    const arrow = setupScene(
+      [{ id: "A" }, { id: "C" }, { id: "T", containerId: "C" }],
+      0,
+    );
+
+    callMove(arrow, pointFrom(150, 150), "T");
+
+    // container (lower than its text) is used as the insertion anchor
+    expect(ids()).toEqual(["A", "C", "arrow", "T"]);
+  });
+
+  it("detects the hovered element from the point when no hit is given", () => {
+    const arrow = setupScene([{ id: "A", x: 1000, y: 1000 }, { id: "R" }], 0);
+
+    callMove(arrow, pointFrom(150, 150));
+
+    expect(ids()).toEqual(["A", "R", "arrow"]);
+  });
+
+  it("leaves the order unchanged when nothing is hovered", () => {
+    const arrow = setupScene([{ id: "A" }, { id: "R" }], 0);
+
+    const replaceSpy = vi.spyOn(h.scene, "replaceAllElements");
+    const { elements, result } = callMove(arrow, pointFrom(5000, 5000));
+
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(ids()).toEqual(["arrow", "A", "R"]);
+    expect(result).toBe(elements);
+  });
+
+  it("leaves the order unchanged when the arrow is not in the elements", () => {
+    populateElements([{ id: "A" }, { id: "R" }]);
+    const arrow = API.createElement({
+      type: "arrow",
+      id: "arrow",
+    }) as ExcalidrawArrowElement;
+
+    const replaceSpy = vi.spyOn(h.scene, "replaceAllElements");
+    callMove(arrow, pointFrom(150, 150), "R");
+
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(ids()).toEqual(["A", "R"]);
   });
 });

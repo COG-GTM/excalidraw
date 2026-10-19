@@ -1,4 +1,18 @@
-import { validateLibraryUrl } from "./library";
+import { API } from "../tests/helpers/api";
+
+import { mergeLibraryItems, validateLibraryUrl } from "./library";
+
+import type { LibraryItem } from "../types";
+
+const createLibraryItem = (
+  id: string,
+  elements: LibraryItem["elements"],
+): LibraryItem => ({
+  id,
+  status: "unpublished",
+  elements,
+  created: 1,
+});
 
 describe("validateLibraryUrl", () => {
   it("should validate hostname & pathname", () => {
@@ -101,5 +115,81 @@ describe("validateLibraryUrl", () => {
         "excalidraw.com/specific/path",
       ]),
     ).toThrow();
+  });
+});
+
+describe("mergeLibraryItems", () => {
+  const rect1 = API.createElement({ id: "rect1", type: "rectangle" });
+  const rect2 = API.createElement({ id: "rect2", type: "rectangle" });
+
+  it("should dedupe items with identical elements even if item ids differ", () => {
+    const local = [createLibraryItem("local", [rect1])];
+    const other = [createLibraryItem("other", [{ ...rect1 }])];
+
+    expect(mergeLibraryItems(local, other)).toEqual(local);
+  });
+
+  it("should keep items whose elements differ in versionNonce", () => {
+    const local = [createLibraryItem("local", [rect1])];
+    const other = [
+      createLibraryItem("other", [
+        { ...rect1, versionNonce: rect1.versionNonce + 1 },
+      ]),
+    ];
+
+    expect(mergeLibraryItems(local, other).map((item) => item.id)).toEqual([
+      "other",
+      "local",
+    ]);
+  });
+
+  it("should keep items whose elements differ in element ids", () => {
+    const local = [createLibraryItem("local", [rect1])];
+    const other = [createLibraryItem("other", [{ ...rect1, id: "rect3" }])];
+
+    expect(mergeLibraryItems(local, other)).toHaveLength(2);
+  });
+
+  it("should keep items with a different number of elements", () => {
+    const local = [createLibraryItem("local", [rect1])];
+    const other = [createLibraryItem("other", [rect1, rect2])];
+
+    expect(mergeLibraryItems(local, other)).toHaveLength(2);
+  });
+
+  it("should treat different element order (z-index) as a unique item", () => {
+    const local = [createLibraryItem("local", [rect1, rect2])];
+    const other = [createLibraryItem("other", [rect2, rect1])];
+
+    expect(mergeLibraryItems(local, other)).toHaveLength(2);
+  });
+
+  it("should put new unique items before local items, preserving order", () => {
+    const local = [
+      createLibraryItem("local1", [rect1]),
+      createLibraryItem("local2", [rect2]),
+    ];
+    const other = [
+      createLibraryItem("new1", [{ ...rect1, id: "a" }]),
+      createLibraryItem("dupe", [rect2]),
+      createLibraryItem("new2", [{ ...rect1, id: "b" }]),
+    ];
+
+    expect(mergeLibraryItems(local, other).map((item) => item.id)).toEqual([
+      "new1",
+      "new2",
+      "local1",
+      "local2",
+    ]);
+  });
+
+  it("should not mutate the input arrays", () => {
+    const local = [createLibraryItem("local", [rect1])];
+    const other = [createLibraryItem("other", [rect2])];
+
+    mergeLibraryItems(local, other);
+
+    expect(local.map((item) => item.id)).toEqual(["local"]);
+    expect(other.map((item) => item.id)).toEqual(["other"]);
   });
 });

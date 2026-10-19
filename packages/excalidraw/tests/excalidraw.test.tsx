@@ -5,8 +5,13 @@ import { THEME } from "@excalidraw/common";
 
 import { t } from "../i18n";
 import { Excalidraw, Footer, MainMenu } from "../index";
-import { actionExportWithDarkMode } from "../actions/actionExport";
+import {
+  actionExportWithDarkMode,
+  actionLoadScene,
+} from "../actions/actionExport";
+import { openConfirmModal } from "../components/OverwriteConfirm/OverwriteConfirmState";
 
+import { API } from "./helpers/api";
 import {
   act,
   fireEvent,
@@ -15,6 +20,18 @@ import {
   render,
   waitFor,
 } from "./test-utils";
+
+import type { MockInstance } from "vitest";
+
+vi.mock(
+  "../components/OverwriteConfirm/OverwriteConfirmState",
+  async (importOriginal) => {
+    const actual = await importOriginal<
+      typeof import("../components/OverwriteConfirm/OverwriteConfirmState")
+    >();
+    return { ...actual, openConfirmModal: vi.fn() };
+  },
+);
 
 const { h } = window;
 
@@ -485,6 +502,148 @@ describe("<Excalidraw/>", () => {
 
       expect(onThemeChange).toHaveBeenCalledWith(THEME.DARK);
       expect(h.state.theme).toBe(THEME.LIGHT);
+    });
+
+    describe("LoadScene", () => {
+      const openConfirmModalMock = vi.mocked(openConfirmModal);
+      let loadScenePerformSpy: MockInstance<typeof actionLoadScene.perform>;
+
+      beforeEach(() => {
+        openConfirmModalMock.mockReset();
+        loadScenePerformSpy = vi
+          .spyOn(actionLoadScene, "perform")
+          .mockResolvedValue(false);
+      });
+
+      afterEach(() => {
+        loadScenePerformSpy.mockRestore();
+      });
+
+      it("should load without confirmation when the canvas is empty", async () => {
+        const { container } = await render(<Excalidraw />);
+
+        toggleMenu(container);
+        fireEvent.click(queryByTestId(container, "load-button")!);
+
+        await waitFor(() => {
+          expect(loadScenePerformSpy).toHaveBeenCalledTimes(1);
+        });
+        expect(openConfirmModalMock).not.toHaveBeenCalled();
+      });
+
+      it("should not load when overwrite confirmation is rejected", async () => {
+        openConfirmModalMock.mockResolvedValue(false);
+        const { container } = await render(<Excalidraw />);
+        API.setElements([API.createElement({ type: "rectangle" })]);
+
+        toggleMenu(container);
+        fireEvent.click(queryByTestId(container, "load-button")!);
+
+        await waitFor(() => {
+          expect(openConfirmModalMock).toHaveBeenCalledTimes(1);
+        });
+        expect(openConfirmModalMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: t("overwriteConfirm.modal.loadFromFile.title"),
+            actionLabel: t("overwriteConfirm.modal.loadFromFile.button"),
+            color: "warning",
+          }),
+        );
+        await act(async () => {
+          await openConfirmModalMock.mock.results[0].value;
+        });
+        expect(loadScenePerformSpy).not.toHaveBeenCalled();
+        expect(h.elements).toHaveLength(1);
+      });
+
+      it("should load when overwrite confirmation is accepted", async () => {
+        openConfirmModalMock.mockResolvedValue(true);
+        const { container } = await render(<Excalidraw />);
+        API.setElements([API.createElement({ type: "rectangle" })]);
+
+        toggleMenu(container);
+        fireEvent.click(queryByTestId(container, "load-button")!);
+
+        await waitFor(() => {
+          expect(loadScenePerformSpy).toHaveBeenCalledTimes(1);
+        });
+        expect(openConfirmModalMock).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("ToggleTheme with allowSystemTheme", () => {
+      const renderWithSystemTheme = (
+        props: React.ComponentProps<typeof Excalidraw>,
+      ) =>
+        render(
+          <Excalidraw {...props}>
+            <MainMenu>
+              <MainMenu.DefaultItems.ToggleTheme
+                allowSystemTheme
+                theme={THEME.LIGHT}
+              />
+            </MainMenu>
+          </Excalidraw>,
+        );
+
+      const getThemeRadio = (container: HTMLElement, ariaLabel: string) =>
+        container.querySelector<HTMLInputElement>(
+          `input[name="theme"][aria-label^="${ariaLabel}"]`,
+        )!;
+
+      it("should render a theme radio group instead of the toggle", async () => {
+        const { container } = await renderWithSystemTheme({
+          theme: THEME.LIGHT,
+          onThemeChange: vi.fn(),
+        });
+
+        toggleMenu(container);
+
+        expect(queryByTestId(container, "toggle-dark-mode")).toBeNull();
+        expect(container.querySelectorAll('input[name="theme"]')).toHaveLength(
+          3,
+        );
+        expect(getThemeRadio(container, t("buttons.lightMode")).checked).toBe(
+          true,
+        );
+        expect(getThemeRadio(container, t("buttons.systemMode")).checked).toBe(
+          false,
+        );
+      });
+
+      it("should call onThemeChange with the selected theme", async () => {
+        const onThemeChange = vi.fn();
+        const { container } = await renderWithSystemTheme({
+          theme: THEME.LIGHT,
+          onThemeChange,
+        });
+
+        toggleMenu(container);
+        fireEvent.click(getThemeRadio(container, t("buttons.systemMode")));
+        expect(onThemeChange).toHaveBeenLastCalledWith("system");
+
+        fireEvent.click(getThemeRadio(container, t("buttons.darkMode")));
+        expect(onThemeChange).toHaveBeenLastCalledWith(THEME.DARK);
+        expect(onThemeChange).toHaveBeenCalledTimes(2);
+        expect(h.state.theme).toBe(THEME.LIGHT);
+      });
+
+      it("should warn and not change theme when onThemeChange is missing", async () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        try {
+          const { container } = await renderWithSystemTheme({});
+
+          toggleMenu(container);
+          fireEvent.click(getThemeRadio(container, t("buttons.systemMode")));
+
+          expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining("props.onThemeChange` must be defined"),
+          );
+          expect(h.state.theme).toBe(THEME.LIGHT);
+        } finally {
+          warnSpy.mockRestore();
+        }
+      });
     });
   });
 

@@ -13,8 +13,15 @@ import {
 } from "@excalidraw/excalidraw/tests/test-utils";
 
 import { getSelectedElements } from "@excalidraw/excalidraw/scene";
+import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
 
-import { elementOverlapsWithFrame } from "../src/frame";
+import type { StaticCanvasAppState } from "@excalidraw/excalidraw/types";
+
+import {
+  elementOverlapsWithFrame,
+  isElementInFrame,
+  shouldApplyFrameClip,
+} from "../src/frame";
 
 import type {
   ExcalidrawElement,
@@ -1180,6 +1187,542 @@ describe("adding elements to frames", () => {
       expect(h.elements.length).toBe(4);
       dragElementIntoFrame(frame2, rectangle1);
       expect(h.elements.length).toBe(4);
+    });
+  });
+});
+
+describe("frame clipping", () => {
+  const createAppState = (
+    overrides: Partial<StaticCanvasAppState> = {},
+  ): StaticCanvasAppState =>
+    ({
+      ...getDefaultAppState(),
+      width: 1000,
+      height: 1000,
+      offsetLeft: 0,
+      offsetTop: 0,
+      frameRendering: { enabled: true, clip: true, name: true, outline: true },
+      ...overrides,
+    } as StaticCanvasAppState);
+
+  const createFrame = () =>
+    API.createElement({
+      type: "frame",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+    }) as NonDeleted<ExcalidrawFrameLikeElement>;
+
+  describe("shouldApplyFrameClip", () => {
+    it("returns false when frame clipping is disabled", () => {
+      const frame = createFrame();
+      const rect = API.createElement({
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        frameId: frame.id,
+      });
+      const elementsMap = arrayToMap([frame, rect]);
+
+      expect(
+        shouldApplyFrameClip(
+          rect,
+          frame,
+          createAppState({
+            frameRendering: {
+              enabled: true,
+              clip: false,
+              name: true,
+              outline: true,
+            },
+          }),
+          elementsMap,
+        ),
+      ).toBe(false);
+      // sanity check: same element is clipped when clipping is enabled
+      expect(
+        shouldApplyFrameClip(rect, frame, createAppState(), elementsMap),
+      ).toBe(true);
+    });
+
+    it("clips an element intersecting the frame and memoizes its groups", () => {
+      const frame = createFrame();
+      const rect = API.createElement({
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        frameId: frame.id,
+        groupIds: ["g1", "g2"],
+      });
+      const checkedGroups = new Map<string, boolean>();
+
+      expect(
+        shouldApplyFrameClip(
+          rect,
+          frame,
+          createAppState(),
+          arrayToMap([frame, rect]),
+          checkedGroups,
+        ),
+      ).toBe(true);
+      expect(checkedGroups.get("g1")).toBe(true);
+      expect(checkedGroups.get("g2")).toBe(true);
+    });
+
+    it("clips an element that completely contains the frame (background)", () => {
+      const frame = createFrame();
+      const background = API.createElement({
+        type: "rectangle",
+        x: -50,
+        y: -50,
+        width: 300,
+        height: 300,
+        frameId: frame.id,
+      });
+
+      expect(
+        shouldApplyFrameClip(
+          background,
+          frame,
+          createAppState(),
+          arrayToMap([frame, background]),
+        ),
+      ).toBe(true);
+    });
+
+    it("does not clip ungrouped elements fully inside or fully outside the frame", () => {
+      const frame = createFrame();
+      const inside = API.createElement({
+        type: "rectangle",
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+      });
+      const elementsMap = arrayToMap([frame, inside, outside]);
+      const appState = createAppState();
+
+      expect(shouldApplyFrameClip(inside, frame, appState, elementsMap)).toBe(
+        false,
+      );
+      expect(shouldApplyFrameClip(outside, frame, appState, elementsMap)).toBe(
+        false,
+      );
+    });
+
+    it("clips a grouped element outside the frame when it belongs to the frame (not dragging)", () => {
+      const frame = createFrame();
+      const inside = API.createElement({
+        type: "rectangle",
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+        groupIds: ["g1"],
+      });
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+        groupIds: ["g1"],
+      });
+      const checkedGroups = new Map<string, boolean>();
+
+      expect(
+        shouldApplyFrameClip(
+          outside,
+          frame,
+          createAppState(),
+          arrayToMap([frame, inside, outside]),
+          checkedGroups,
+        ),
+      ).toBe(true);
+      expect(checkedGroups.get("g1")).toBe(true);
+    });
+
+    it("does not clip a grouped element outside the frame with a different frameId (not dragging)", () => {
+      const frame = createFrame();
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        frameId: null,
+        groupIds: ["g1"],
+      });
+      const checkedGroups = new Map<string, boolean>();
+
+      expect(
+        shouldApplyFrameClip(
+          outside,
+          frame,
+          createAppState(),
+          arrayToMap([frame, outside]),
+          checkedGroups,
+        ),
+      ).toBe(false);
+      expect(checkedGroups.get("g1")).toBe(false);
+    });
+
+    it("while dragging, a grouped element outside the frame follows its group's decision", () => {
+      const frame = createFrame();
+      const sibling = API.createElement({
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        frameId: frame.id,
+        groupIds: ["g1"],
+      });
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        frameId: null,
+        groupIds: ["g1"],
+      });
+      const elementsMap = arrayToMap([frame, sibling, outside]);
+      const appState = createAppState({
+        selectedElementIds: { [sibling.id]: true, [outside.id]: true },
+        selectedElementsAreBeingDragged: true,
+        frameToHighlight: frame,
+      });
+
+      // sibling intersects the frame -> group is "in" the frame
+      const checkedGroups = new Map<string, boolean>();
+      expect(
+        shouldApplyFrameClip(
+          sibling,
+          frame,
+          appState,
+          elementsMap,
+          checkedGroups,
+        ),
+      ).toBe(true);
+      expect(checkedGroups.get("g1")).toBe(true);
+      expect(
+        shouldApplyFrameClip(
+          outside,
+          frame,
+          appState,
+          elementsMap,
+          checkedGroups,
+        ),
+      ).toBe(true);
+
+      // without a memo, the group geometry is evaluated directly
+      const freshGroups = new Map<string, boolean>();
+      expect(
+        shouldApplyFrameClip(
+          outside,
+          frame,
+          appState,
+          elementsMap,
+          freshGroups,
+        ),
+      ).toBe(true);
+      expect(freshGroups.get("g1")).toBe(true);
+
+      // a memoized negative group decision is respected
+      const negativeGroups = new Map<string, boolean>([["g1", false]]);
+      expect(
+        shouldApplyFrameClip(
+          outside,
+          frame,
+          appState,
+          elementsMap,
+          negativeGroups,
+        ),
+      ).toBe(false);
+    });
+  });
+
+  describe("isElementInFrame", () => {
+    it("returns false when there is no target frame", () => {
+      const frame = createFrame();
+      const rect = API.createElement({
+        type: "rectangle",
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50,
+      });
+
+      expect(
+        isElementInFrame(rect, arrayToMap([frame, rect]), createAppState()),
+      ).toBe(false);
+    });
+
+    it("returns true for a frame child that is not being dragged", () => {
+      const frame = createFrame();
+      // geometrically outside, but membership can't change if not dragged
+      const rect = API.createElement({
+        type: "rectangle",
+        x: 300,
+        y: 300,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      const elementsMap = arrayToMap([frame, rect]);
+
+      expect(isElementInFrame(rect, elementsMap, createAppState())).toBe(true);
+      expect(
+        isElementInFrame(
+          rect,
+          elementsMap,
+          createAppState({
+            selectedElementIds: { [rect.id]: true },
+            selectedElementsAreBeingDragged: false,
+          }),
+        ),
+      ).toBe(true);
+    });
+
+    it("returns true when both the element and its frame are selected and dragged", () => {
+      const frame = createFrame();
+      const rect = API.createElement({
+        type: "rectangle",
+        x: 300,
+        y: 300,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+
+      expect(
+        isElementInFrame(
+          rect,
+          arrayToMap([frame, rect]),
+          createAppState({
+            selectedElementIds: { [rect.id]: true, [frame.id]: true },
+            selectedElementsAreBeingDragged: true,
+            frameToHighlight: null,
+          }),
+        ),
+      ).toBe(true);
+    });
+
+    it("uses frameToHighlight as target while dragging an ungrouped element", () => {
+      const frame = createFrame();
+      const overlapping = API.createElement({
+        type: "rectangle",
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+      });
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      const elementsMap = arrayToMap([frame, overlapping, outside]);
+      const dragging: Partial<StaticCanvasAppState> = {
+        selectedElementIds: { [overlapping.id]: true, [outside.id]: true },
+        selectedElementsAreBeingDragged: true,
+      };
+
+      expect(
+        isElementInFrame(
+          overlapping,
+          elementsMap,
+          createAppState({ ...dragging, frameToHighlight: frame }),
+        ),
+      ).toBe(true);
+      expect(
+        isElementInFrame(
+          outside,
+          elementsMap,
+          createAppState({ ...dragging, frameToHighlight: frame }),
+        ),
+      ).toBe(false);
+      // no highlighted frame while dragging -> no target frame
+      expect(
+        isElementInFrame(
+          overlapping,
+          elementsMap,
+          createAppState({ ...dragging, frameToHighlight: null }),
+        ),
+      ).toBe(false);
+    });
+
+    it("uses the container of a bound text element", () => {
+      const frame = createFrame();
+      const container = API.createElement({
+        type: "rectangle",
+        x: 300,
+        y: 300,
+        width: 50,
+        height: 50,
+        frameId: frame.id,
+      });
+      const text = API.createElement({
+        type: "text",
+        x: 300,
+        y: 300,
+        containerId: container.id,
+        frameId: frame.id,
+      });
+      const elementsMap = arrayToMap([frame, container, text]);
+
+      // text is selected & dragged, but its container is not -> treated as
+      // not being dragged
+      expect(
+        isElementInFrame(
+          text,
+          elementsMap,
+          createAppState({
+            selectedElementIds: { [text.id]: true },
+            selectedElementsAreBeingDragged: true,
+            frameToHighlight: frame,
+          }),
+        ),
+      ).toBe(true);
+
+      // container is selected & dragged and is outside the frame
+      expect(
+        isElementInFrame(
+          text,
+          elementsMap,
+          createAppState({
+            selectedElementIds: { [container.id]: true },
+            selectedElementsAreBeingDragged: true,
+            frameToHighlight: frame,
+          }),
+        ),
+      ).toBe(false);
+    });
+
+    it("resolves grouped elements via group membership and memoizes the result", () => {
+      const frame = createFrame();
+      const sibling = API.createElement({
+        type: "rectangle",
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const outside = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const elementsMap = arrayToMap([frame, sibling, outside]);
+      const appState = createAppState({
+        selectedElementIds: { [sibling.id]: true, [outside.id]: true },
+        selectedElementsAreBeingDragged: true,
+        frameToHighlight: frame,
+      });
+
+      const checkedGroups = new Map<string, boolean>();
+      expect(
+        isElementInFrame(outside, elementsMap, appState, { checkedGroups }),
+      ).toBe(true);
+      expect(checkedGroups.get("g1")).toBe(true);
+
+      // memoized group decision short-circuits the geometry check
+      const memo = new Map<string, boolean>([["g1", false]]);
+      expect(
+        isElementInFrame(sibling, elementsMap, appState, {
+          checkedGroups: memo,
+        }),
+      ).toBe(false);
+    });
+
+    it("returns false when no group member overlaps the frame", () => {
+      const frame = createFrame();
+      const a = API.createElement({
+        type: "rectangle",
+        x: 200,
+        y: 0,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const b = API.createElement({
+        type: "rectangle",
+        x: 300,
+        y: 0,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+
+      expect(
+        isElementInFrame(
+          a,
+          arrayToMap([frame, a, b]),
+          createAppState({
+            selectedElementIds: { [a.id]: true, [b.id]: true },
+            selectedElementsAreBeingDragged: true,
+            frameToHighlight: frame,
+          }),
+        ),
+      ).toBe(false);
+    });
+
+    it("returns false and memoizes when the group contains a frame", () => {
+      const frame = createFrame();
+      const otherFrame = API.createElement({
+        type: "frame",
+        x: 300,
+        y: 300,
+        width: 100,
+        height: 100,
+        groupIds: ["g1"],
+      });
+      const member = API.createElement({
+        type: "rectangle",
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50,
+        groupIds: ["g1"],
+      });
+      const checkedGroups = new Map<string, boolean>();
+
+      expect(
+        isElementInFrame(
+          member,
+          arrayToMap([frame, otherFrame, member]),
+          createAppState({
+            selectedElementIds: { [member.id]: true, [otherFrame.id]: true },
+            selectedElementsAreBeingDragged: true,
+            frameToHighlight: frame,
+          }),
+          { checkedGroups },
+        ),
+      ).toBe(false);
+      expect(checkedGroups.get("g1")).toBe(false);
     });
   });
 });

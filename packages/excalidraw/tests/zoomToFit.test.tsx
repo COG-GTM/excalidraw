@@ -110,6 +110,9 @@ describe("zoom to fit actions", () => {
   beforeEach(async () => {
     mockViewport();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
+    // `mockViewport` patches the global window's prototype, so the editor
+    // must be mounted in the global document
+    expect(h.app.ownerWindow).toBe(window);
     expect(h.state.width).toBe(VIEWPORT.width);
     expect(h.state.height).toBe(VIEWPORT.height);
     expect(h.state.zoom.value).toBe(1);

@@ -120,7 +120,7 @@ describe("search", () => {
 
   it("should match text and cycle through matches on Enter", async () => {
     const scrollIntoViewMock = jest.fn();
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+    h.app.ownerWindow.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
 
     API.setElements([
       API.createElement({ type: "text", text: "test one" }),
@@ -158,7 +158,7 @@ describe("search", () => {
 
   it("should match text split across multiple lines", async () => {
     const scrollIntoViewMock = jest.fn();
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+    h.app.ownerWindow.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
 
     API.setElements([
       API.createElement({
@@ -206,7 +206,7 @@ describe("search", () => {
 
   it("should match frame names", async () => {
     const scrollIntoViewMock = jest.fn();
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+    h.app.ownerWindow.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
 
     API.setElements([
       API.createElement({

@@ -385,7 +385,8 @@ const openLibraryDropdown = (container: HTMLElement) => {
 const confirmDialog = async (container: HTMLElement) => {
   let dialog: HTMLElement | null = null;
   await waitFor(() => {
-    dialog = document.querySelector<HTMLElement>(".confirm-dialog");
+    dialog =
+      container.ownerDocument.querySelector<HTMLElement>(".confirm-dialog");
     expect(dialog).not.toBeNull();
   });
   fireEvent.click(within(dialog!).getByText(t("buttons.confirm")));
@@ -538,7 +539,9 @@ describe("library sidebar", () => {
       expect(await h.app.library.getLatestLibrary()).toEqual([]);
       await waitFor(() => {
         expect(
-          within(document.body).getByText(t("alerts.errorAddingToLibrary")),
+          within(container.ownerDocument.body).getByText(
+            t("alerts.errorAddingToLibrary"),
+          ),
         ).toBeInTheDocument();
       });
     });
@@ -704,7 +707,9 @@ describe("library sidebar", () => {
 
       await waitFor(() => {
         expect(
-          within(document.body).getByText(t("alerts.resetLibrary")),
+          within(container.ownerDocument.body).getByText(
+            t("alerts.resetLibrary"),
+          ),
         ).toBeInTheDocument();
       });
       await confirmDialog(container);
@@ -726,13 +731,16 @@ describe("library sidebar", () => {
 
       let dialog: HTMLElement | null = null;
       await waitFor(() => {
-        dialog = document.querySelector<HTMLElement>(".confirm-dialog");
+        dialog =
+          container.ownerDocument.querySelector<HTMLElement>(".confirm-dialog");
         expect(dialog).not.toBeNull();
       });
       fireEvent.click(within(dialog!).getByText(t("buttons.cancel")));
 
       await waitFor(() => {
-        expect(document.querySelector(".confirm-dialog")).toBeNull();
+        expect(
+          container.ownerDocument.querySelector(".confirm-dialog"),
+        ).toBeNull();
       });
       expect(await getLibraryIds()).toEqual(["item1"]);
     });
@@ -765,7 +773,7 @@ describe("library sidebar", () => {
       fireEvent.click(within(menu).getByText(t("buttons.remove")));
       await waitFor(() => {
         expect(
-          within(document.body).getByText(
+          within(container.ownerDocument.body).getByText(
             t("alerts.removeItemsFromsLibrary", { count: 1 }),
           ),
         ).toBeInTheDocument();
@@ -957,14 +965,19 @@ describe("library sidebar", () => {
       });
       await waitFor(() => {
         expect(
-          document.querySelector(".publish-library-success"),
+          container.ownerDocument.querySelector(".publish-library-success"),
         ).not.toBeNull();
       });
       fireEvent.click(
-        queryByTestId(document.body, "publish-library-success-close")!,
+        queryByTestId(
+          container.ownerDocument.body,
+          "publish-library-success-close",
+        )!,
       );
       await waitFor(() => {
-        expect(document.querySelector(".publish-library-success")).toBeNull();
+        expect(
+          container.ownerDocument.querySelector(".publish-library-success"),
+        ).toBeNull();
       });
     });
   });

@@ -88,14 +88,15 @@ describe("useOutsideClick", () => {
 
   it("ignores <html> target while a modal radix popup disables body pointer events", () => {
     const callback = vi.fn();
-    render(<Harness callback={callback} />);
+    const { container } = render(<Harness callback={callback} />);
+    const { body, documentElement } = container.ownerDocument;
 
-    document.body.style.pointerEvents = "none";
-    fireEvent.pointerDown(document.documentElement);
+    body.style.pointerEvents = "none";
+    fireEvent.pointerDown(documentElement);
     expect(callback).not.toHaveBeenCalled();
 
-    document.body.style.pointerEvents = "";
-    fireEvent.pointerDown(document.documentElement);
+    body.style.pointerEvents = "";
+    fireEvent.pointerDown(documentElement);
     expect(callback).toHaveBeenCalledTimes(1);
   });
 

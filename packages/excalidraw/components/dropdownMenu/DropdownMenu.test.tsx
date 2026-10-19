@@ -33,16 +33,18 @@ describe("Test <DropdownMenu/>", () => {
   // subscribes. Flip to `it` once fixed.
   it.fails("closes the main menu on pointerdown outside of it", async () => {
     const { container } = await render(<Excalidraw />);
+    const ownerDocument = container.ownerDocument;
 
     fireEvent.click(getByTestId(container, "main-menu-trigger"));
     expect(window.h.state.openMenu).toBe("canvas");
 
     fireEvent.pointerDown(
-      document.querySelector(".dropdown-menu-container")!.firstElementChild!,
+      ownerDocument.querySelector(".dropdown-menu-container")!
+        .firstElementChild!,
     );
     expect(window.h.state.openMenu).toBe("canvas");
 
-    fireEvent.pointerDown(document.body);
+    fireEvent.pointerDown(ownerDocument.body);
     await waitFor(() => {
       expect(window.h.state.openMenu).toBe(null);
     });

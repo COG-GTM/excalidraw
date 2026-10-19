@@ -271,6 +271,91 @@ describe("compressData / decompressData", () => {
       }
     });
 
+    describe("malformed chunk boundaries", () => {
+      // byte offsets of the outer container's length fields
+      const layout = (buffer: Uint8Array) => {
+        const view = new DataView(buffer.buffer);
+        const encodingMetaLength = view.getUint32(4);
+        const ivLengthOffset = 4 + 4 + encodingMetaLength;
+        const cipherLengthOffset = ivLengthOffset + 4 + IV_LENGTH_BYTES;
+        return { view, ivLengthOffset, cipherLengthOffset };
+      };
+
+      const compress = () =>
+        compressData(utf8("x".repeat(500)), {
+          encryptionKey: key,
+          metadata: { a: 1 },
+        });
+
+      it("rejects a buffer truncated inside a length field", async () => {
+        const compressed = await compress();
+        const { cipherLengthOffset } = layout(compressed);
+
+        await expect(
+          decompressData(compressed.slice(0, cipherLengthOffset + 2), {
+            decryptionKey: key,
+          }),
+        ).rejects.toThrow(RangeError);
+      });
+
+      it("rejects a buffer truncated right after a chunk (missing chunk)", async () => {
+        const compressed = await compress();
+        const { cipherLengthOffset } = layout(compressed);
+
+        await expect(
+          decompressData(compressed.slice(0, cipherLengthOffset), {
+            decryptionKey: key,
+          }),
+        ).rejects.toThrow();
+      });
+
+      it("rejects an overstated length that swallows the next chunk", async () => {
+        const compressed = await compress();
+        const { view, ivLengthOffset } = layout(compressed);
+        view.setUint32(ivLengthOffset, IV_LENGTH_BYTES + 4 + 50);
+
+        await expect(
+          decompressData(compressed, { decryptionKey: key }),
+        ).rejects.toThrow();
+      });
+
+      it("rejects an understated length of the last chunk", async () => {
+        const compressed = await compress();
+        const { view, cipherLengthOffset } = layout(compressed);
+        view.setUint32(cipherLengthOffset, 5);
+
+        await expect(
+          decompressData(compressed, { decryptionKey: key }),
+        ).rejects.toThrow();
+      });
+
+      it("rejects an overstated encoding-metadata length", async () => {
+        const compressed = await compress();
+        const { view } = layout(compressed);
+        view.setUint32(4, view.getUint32(4) + 3);
+
+        await expect(
+          decompressData(compressed, { decryptionKey: key }),
+        ).rejects.toThrow(SyntaxError);
+      });
+
+      it("tolerates an overstated length of the last chunk (current behavior)", async () => {
+        // `splitBuffers` slices with `slice(cursor, cursor + size)`, which
+        // clamps to the buffer end, so an overstated final length is lenient
+        const compressed = await compress();
+        const { view, cipherLengthOffset } = layout(compressed);
+        view.setUint32(
+          cipherLengthOffset,
+          view.getUint32(cipherLengthOffset) + 100,
+        );
+
+        const { data } = await decompressData(compressed, {
+          decryptionKey: key,
+        });
+        expect(new TextDecoder().decode(data)).toBe("x".repeat(500));
+      });
+    });
+
     it("rejects tampered ciphertext (AES-GCM authentication)", async () => {
       const compressed = await compressData(utf8("integrity"), {
         encryptionKey: key,

@@ -55,16 +55,19 @@ const renderAndOpenDialog = async (
   );
 
   const opener = screen.getByRole("button", { name: "open dialog" });
-  // Dialog captures `document.activeElement` on mount to restore it on close
+  // Dialog captures the active element on mount to restore it on close
   act(() => opener.focus());
   fireEvent.click(opener);
 
   await waitFor(() => {
-    expect(document.querySelector(".Dialog")).not.toBeNull();
+    expect(getOwnerDocument().querySelector(".Dialog")).not.toBeNull();
   });
 
   return { opener };
 };
+
+// the editor may be mounted into another document (e.g. an iframe)
+const getOwnerDocument = () => window.h.app.ownerDocument;
 
 const getDialogButton = (name: string) =>
   screen.getByRole("button", { name }) as HTMLButtonElement;
@@ -79,7 +82,9 @@ describe("Dialog", () => {
       await renderAndOpenDialog({ buttons: ["first", "second", "third"] });
 
       await waitFor(() => {
-        expect(document.activeElement).toBe(getDialogButton("second"));
+        expect(getOwnerDocument().activeElement).toBe(
+          getDialogButton("second"),
+        );
       });
     });
 
@@ -87,7 +92,7 @@ describe("Dialog", () => {
       await renderAndOpenDialog({ buttons: ["only"] });
 
       await waitFor(() => {
-        expect(document.activeElement).toBe(getDialogButton("only"));
+        expect(getOwnerDocument().activeElement).toBe(getDialogButton("only"));
       });
     });
 
@@ -100,9 +105,13 @@ describe("Dialog", () => {
       // let the deferred autofocus timeout run
       await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 
-      expect(document.activeElement).toBe(opener);
-      expect(document.activeElement).not.toBe(getDialogButton("first"));
-      expect(document.activeElement).not.toBe(getDialogButton("second"));
+      expect(getOwnerDocument().activeElement).toBe(opener);
+      expect(getOwnerDocument().activeElement).not.toBe(
+        getDialogButton("first"),
+      );
+      expect(getOwnerDocument().activeElement).not.toBe(
+        getDialogButton("second"),
+      );
     });
   });
 
@@ -117,7 +126,7 @@ describe("Dialog", () => {
       const notPrevented = fireEvent.keyDown(third, { key: KEYS.TAB });
 
       expect(notPrevented).toBe(false);
-      expect(document.activeElement).toBe(first);
+      expect(getOwnerDocument().activeElement).toBe(first);
     });
 
     it("wraps Shift+Tab from the first focusable element to the last", async () => {
@@ -133,7 +142,7 @@ describe("Dialog", () => {
       });
 
       expect(notPrevented).toBe(false);
-      expect(document.activeElement).toBe(third);
+      expect(getOwnerDocument().activeElement).toBe(third);
     });
 
     it("does not intercept Tab / Shift+Tab away from the boundaries", async () => {
@@ -144,12 +153,12 @@ describe("Dialog", () => {
       act(() => second.focus());
 
       expect(fireEvent.keyDown(second, { key: KEYS.TAB })).toBe(true);
-      expect(document.activeElement).toBe(second);
+      expect(getOwnerDocument().activeElement).toBe(second);
 
       expect(fireEvent.keyDown(second, { key: KEYS.TAB, shiftKey: true })).toBe(
         true,
       );
-      expect(document.activeElement).toBe(second);
+      expect(getOwnerDocument().activeElement).toBe(second);
     });
 
     it("does not intercept Shift+Tab on the last or Tab on the first element", async () => {
@@ -162,11 +171,11 @@ describe("Dialog", () => {
       expect(fireEvent.keyDown(third, { key: KEYS.TAB, shiftKey: true })).toBe(
         true,
       );
-      expect(document.activeElement).toBe(third);
+      expect(getOwnerDocument().activeElement).toBe(third);
 
       act(() => first.focus());
       expect(fireEvent.keyDown(first, { key: KEYS.TAB })).toBe(true);
-      expect(document.activeElement).toBe(first);
+      expect(getOwnerDocument().activeElement).toBe(first);
     });
 
     it("ignores non-Tab keys at the boundaries", async () => {
@@ -176,7 +185,7 @@ describe("Dialog", () => {
 
       act(() => third.focus());
       fireEvent.keyDown(third, { key: KEYS.ARROW_DOWN });
-      expect(document.activeElement).toBe(third);
+      expect(getOwnerDocument().activeElement).toBe(third);
     });
   });
 
@@ -189,7 +198,9 @@ describe("Dialog", () => {
       });
 
       await waitFor(() => {
-        expect(document.activeElement).toBe(getDialogButton("second"));
+        expect(getOwnerDocument().activeElement).toBe(
+          getDialogButton("second"),
+        );
       });
 
       act(() => {
@@ -198,13 +209,13 @@ describe("Dialog", () => {
       });
       expect(window.h.state.openMenu).toBe("canvas");
 
-      fireEvent.click(document.querySelector(".Modal__background")!);
+      fireEvent.click(getOwnerDocument().querySelector(".Modal__background")!);
 
       await waitFor(() => {
-        expect(document.querySelector(".Dialog")).toBeNull();
+        expect(getOwnerDocument().querySelector(".Dialog")).toBeNull();
       });
       expect(onCloseRequest).toHaveBeenCalledTimes(1);
-      expect(document.activeElement).toBe(opener);
+      expect(getOwnerDocument().activeElement).toBe(opener);
       expect(window.h.state.openMenu).toBeNull();
       expect(editorJotaiStore.get(isLibraryMenuOpenAtom)).toBe(false);
     });
@@ -217,16 +228,18 @@ describe("Dialog", () => {
       });
 
       await waitFor(() => {
-        expect(document.activeElement).toBe(getDialogButton("second"));
+        expect(getOwnerDocument().activeElement).toBe(
+          getDialogButton("second"),
+        );
       });
 
       fireEvent.keyDown(getDialogButton("second"), { key: KEYS.ESCAPE });
 
       await waitFor(() => {
-        expect(document.querySelector(".Dialog")).toBeNull();
+        expect(getOwnerDocument().querySelector(".Dialog")).toBeNull();
       });
       expect(onCloseRequest).toHaveBeenCalledTimes(1);
-      expect(document.activeElement).toBe(opener);
+      expect(getOwnerDocument().activeElement).toBe(opener);
     });
   });
 });

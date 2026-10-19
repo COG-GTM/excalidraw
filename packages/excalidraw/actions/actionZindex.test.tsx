@@ -156,14 +156,15 @@ describe("z-index keyboard shortcuts", () => {
       modifiers: { alt?: boolean; shift?: boolean },
       code: string,
     ) =>
-      new KeyboardEvent("keydown", {
+      new h.app.ownerWindow.KeyboardEvent("keydown", {
         code,
         ctrlKey: true,
         altKey: !!modifiers.alt,
         shiftKey: !!modifiers.shift,
       });
 
-    it("sendToBack/bringToFront keyTest matches CtrlOrCmd+Alt, not CtrlOrCmd+Shift", () => {
+    it("sendToBack/bringToFront keyTest matches CtrlOrCmd+Alt, not CtrlOrCmd+Shift", async () => {
+      await setup("A");
       expect(
         actionSendToBack.keyTest!(event({ alt: true }, CODES.BRACKET_LEFT)),
       ).toBe(true);
@@ -180,7 +181,8 @@ describe("z-index keyboard shortcuts", () => {
       ).toBe(false);
     });
 
-    it("CtrlOrCmd+Alt+[/] also satisfies the sendBackward/bringForward keyTest", () => {
+    it("CtrlOrCmd+Alt+[/] also satisfies the sendBackward/bringForward keyTest", async () => {
+      await setup("A");
       // sendBackward/bringForward only reject Shift, so on darwin the Alt
       // variant matches two actions and ActionManager cancels the shortcut.
       expect(

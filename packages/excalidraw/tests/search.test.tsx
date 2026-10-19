@@ -63,11 +63,22 @@ const getResultItems = () =>
 const q = (query: string) => query as SearchQuery;
 
 describe("search", () => {
+  let originalScrollIntoView: HTMLElement["scrollIntoView"];
+
   beforeEach(async () => {
     await render(<Excalidraw handleKeyboardGlobally />);
     API.setAppState({
       openSidebar: null,
     });
+    // result rows call scrollIntoView, which jsdom doesn't implement
+    const { prototype } = h.app.ownerWindow.HTMLElement;
+    originalScrollIntoView = prototype.scrollIntoView;
+    prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    h.app.ownerWindow.HTMLElement.prototype.scrollIntoView =
+      originalScrollIntoView;
   });
 
   it("should toggle search on cmd+f", async () => {
@@ -228,8 +239,6 @@ describe("search", () => {
   });
 
   it("should treat regex metacharacters in the query literally", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const target = API.createElement({ type: "text", text: "call a(b) now" });
     API.setElements([
       target,
@@ -264,8 +273,6 @@ describe("search", () => {
   });
 
   it("should match case-insensitively and every occurrence in an element", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const text = API.createElement({ type: "text", text: "Foo foo FOO" });
     API.setElements([text]);
 
@@ -289,8 +296,6 @@ describe("search", () => {
   });
 
   it("should list frame matches first, each group sorted by y", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const textLow = API.createElement({ type: "text", text: "alpha", y: 300 });
     const textHigh = API.createElement({
       type: "text",
@@ -328,8 +333,6 @@ describe("search", () => {
   });
 
   it("should show singular count and a no-match message", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     API.setElements([API.createElement({ type: "text", text: "unique" })]);
 
     const searchInput = await openSearch();
@@ -356,8 +359,6 @@ describe("search", () => {
   });
 
   it("should cycle focus with ArrowDown/ArrowUp and wrap around", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const first = API.createElement({ type: "text", text: "item", y: 0 });
     const second = API.createElement({ type: "text", text: "item", y: 50 });
     const third = API.createElement({ type: "text", text: "item", y: 100 });
@@ -394,8 +395,6 @@ describe("search", () => {
   });
 
   it("should focus a match when its result row is clicked", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const frame = API.createElement({ type: "frame", y: 0 });
     const text = API.createElement({ type: "text", text: "zeta", y: 0 });
     API.setElements([text, frame]);
@@ -435,8 +434,6 @@ describe("search", () => {
   });
 
   it("should re-run the search when the scene changes", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const original = API.createElement({ type: "text", text: "gamma" });
     API.setElements([original]);
 
@@ -471,8 +468,6 @@ describe("search", () => {
   });
 
   it("should scroll the viewport to an off-screen focused match", async () => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
     const near = API.createElement({
       type: "text",
       text: "delta",
@@ -498,8 +493,8 @@ describe("search", () => {
 
     // jsdom has no layout, so give the canvas a real viewport size
     API.setAppState({ width: 1000, height: 800 });
-    h.app.canvas.width = 1000 * window.devicePixelRatio;
-    h.app.canvas.height = 800 * window.devicePixelRatio;
+    h.app.canvas.width = 1000 * h.app.ownerWindow.devicePixelRatio;
+    h.app.canvas.height = 800 * h.app.ownerWindow.devicePixelRatio;
 
     const searchInput = await openSearch();
     const setViewportSpy = vi

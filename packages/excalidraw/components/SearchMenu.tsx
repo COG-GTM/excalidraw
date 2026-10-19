@@ -77,7 +77,7 @@ type SearchMatches = {
   items: SearchMatchItem[];
 };
 
-type SearchQuery = string & { _brand: "SearchQuery" };
+export type SearchQuery = string & { _brand: "SearchQuery" };
 
 export const SearchMenu = () => {
   const app = useApp();
@@ -542,7 +542,7 @@ const areEqual = (prevProps: MatchListProps, nextProps: MatchListProps) => {
 
 const MatchList = memo(MatchListBase, areEqual);
 
-const getMatchPreview = (
+export const getMatchPreview = (
   text: string,
   index: number,
   searchQuery: SearchQuery,
@@ -591,7 +591,7 @@ const getMatchPreview = (
   };
 };
 
-const normalizeWrappedText = (
+export const normalizeWrappedText = (
   wrappedText: string,
   originalText: string,
 ): string => {
@@ -626,7 +626,7 @@ const normalizeWrappedText = (
   return normalizedLines.join("\n");
 };
 
-const getMatchedLines = (
+export const getMatchedLines = (
   textElement: ExcalidrawTextElement,
   searchQuery: SearchQuery,
   index: number,
@@ -733,7 +733,7 @@ const getMatchedLines = (
   return matchedLines;
 };
 
-const getMatchInFrame = (
+export const getMatchInFrame = (
   frame: ExcalidrawFrameLikeElement,
   searchQuery: SearchQuery,
   index: number,
@@ -774,7 +774,7 @@ const getMatchInFrame = (
   ];
 };
 
-const escapeSpecialCharacters = (string: string) => {
+export const escapeSpecialCharacters = (string: string) => {
   return string.replace(/[.*+?^${}()|[\]\\-]/g, "\\$&");
 };
 

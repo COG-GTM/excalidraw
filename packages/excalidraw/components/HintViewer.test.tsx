@@ -523,13 +523,10 @@ describe("<HintViewer/>", () => {
   });
 
   describe("in the editor", () => {
-    beforeEach(async () => {
-      await renderExcalidraw(<Excalidraw />);
-    });
-
-    it("updates the hint bar as the active tool changes", () => {
+    it("updates the hint bar as the active tool changes", async () => {
+      const { container } = await renderExcalidraw(<Excalidraw />);
       const hintText = () =>
-        document.querySelector(".HintViewer")?.textContent ?? null;
+        container.querySelector(".HintViewer")?.textContent ?? null;
 
       expect(hintText()).toBe(
         "To move canvas, hold Scroll wheel or Space while dragging, or use the hand tool",

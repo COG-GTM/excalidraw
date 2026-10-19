@@ -3,15 +3,18 @@ import { vi } from "vitest";
 
 import { DEFAULT_SIDEBAR, FONT_FAMILY, ROUNDNESS } from "@excalidraw/common";
 
-import { newElementWith } from "@excalidraw/element";
+import { newElementWith, validateElbowPoints } from "@excalidraw/element";
 import * as sizeHelpers from "@excalidraw/element";
 
 import type { LocalPoint } from "@excalidraw/math";
 
 import type {
   ExcalidrawArrowElement,
+  ExcalidrawElbowArrowElement,
   ExcalidrawElement,
+  ExcalidrawFrameLikeElement,
   ExcalidrawFreeDrawElement,
+  ExcalidrawImageElement,
   ExcalidrawLinearElement,
   ExcalidrawTextElement,
 } from "@excalidraw/element/types";
@@ -1299,5 +1302,308 @@ describe("repairing bindings", () => {
         containerId: null,
       }),
     ]);
+  });
+});
+
+describe("restoreElements repair paths", () => {
+  it("should regenerate ids of duplicate elements, keeping the first occurrence", () => {
+    const rect = API.createElement({ type: "rectangle", id: "dup" });
+    const duplicate = API.createElement({
+      type: "ellipse",
+      id: "dup",
+      x: 200,
+    });
+    const arrow = API.createElement({
+      type: "arrow",
+      endBinding: {
+        elementId: "dup",
+        fixedPoint: [0.5, 0.5],
+        mode: "inside",
+      },
+    });
+
+    const restoredElements = restore.restoreElements(
+      [rect, duplicate, arrow],
+      null,
+      { repairBindings: true },
+    );
+
+    expect(restoredElements).toHaveLength(3);
+    expect(restoredElements[0]).toEqual(
+      expect.objectContaining({ id: "dup", type: "rectangle" }),
+    );
+    expect(restoredElements[1]).toEqual(
+      expect.objectContaining({ type: "ellipse", x: 200 }),
+    );
+    expect(restoredElements[1].id).not.toBe("dup");
+    expect(new Set(restoredElements.map((el) => el.id)).size).toBe(3);
+    // binding still resolves to the first (original) element
+    expect(
+      (restoredElements[2] as ExcalidrawArrowElement).endBinding?.elementId,
+    ).toBe("dup");
+  });
+
+  it("should remove frameId pointing to a non-existent frame when repair is true", () => {
+    const frame = API.createElement({ type: "frame", id: "frame1" });
+    const inFrame = API.createElement({
+      type: "rectangle",
+      frameId: frame.id,
+    });
+    const orphan = API.createElement({
+      type: "rectangle",
+      frameId: "non-existent-frame",
+    });
+
+    let restoredElements = restore.restoreElements(
+      [frame, inFrame, orphan],
+      null,
+    );
+
+    expect(restoredElements).toEqual([
+      expect.objectContaining({ id: frame.id }),
+      expect.objectContaining({ id: inFrame.id, frameId: frame.id }),
+      expect.objectContaining({
+        id: orphan.id,
+        frameId: "non-existent-frame",
+      }),
+    ]);
+
+    restoredElements = restore.restoreElements([frame, inFrame, orphan], null, {
+      repairBindings: true,
+    });
+
+    expect(restoredElements).toEqual([
+      expect.objectContaining({ id: frame.id }),
+      expect.objectContaining({ id: inFrame.id, frameId: frame.id }),
+      expect.objectContaining({ id: orphan.id, frameId: null }),
+    ]);
+  });
+
+  it.each(["frame", "magicframe"] as const)(
+    "should restore %s element name",
+    (type) => {
+      const named = API.createElement({ type, id: "named" });
+      Object.assign(named, { name: "My frame" });
+      const unnamed = API.createElement({ type, id: "unnamed" });
+      delete (unnamed as any).name;
+
+      const [restoredNamed, restoredUnnamed] = restore.restoreElements(
+        [named, unnamed],
+        null,
+      ) as ExcalidrawFrameLikeElement[];
+
+      expect(restoredNamed).toEqual(
+        expect.objectContaining({ type, id: "named", name: "My frame" }),
+      );
+      expect(restoredUnnamed).toEqual(
+        expect.objectContaining({ type, id: "unnamed", name: null }),
+      );
+    },
+  );
+
+  it.each(["iframe", "embeddable"] as const)(
+    "should restore %s element",
+    (type) => {
+      const element = API.createElement({ type, width: 300, height: 200 });
+      Object.assign(element, { link: "https://example.com" });
+
+      const [restoredElement] = restore.restoreElements([element], null);
+
+      expect(restoredElement).toEqual(
+        expect.objectContaining({
+          type,
+          id: element.id,
+          width: 300,
+          height: 200,
+          link: "https://example.com",
+        }),
+      );
+    },
+  );
+
+  it("should restore image element preserving fileId, status, scale and crop", () => {
+    const crop = {
+      x: 10,
+      y: 20,
+      width: 50,
+      height: 60,
+      naturalWidth: 200,
+      naturalHeight: 300,
+    };
+    const image = API.createElement({
+      type: "image",
+      fileId: "file-1",
+      status: "saved",
+      scale: [-1, 1],
+    });
+    Object.assign(image, { crop });
+
+    const [restoredImage] = restore.restoreElements(
+      [image],
+      null,
+    ) as ExcalidrawImageElement[];
+
+    expect(restoredImage).toEqual(
+      expect.objectContaining({
+        type: "image",
+        id: image.id,
+        fileId: "file-1",
+        status: "saved",
+        scale: [-1, 1],
+        crop,
+      }),
+    );
+  });
+
+  it("should restore image element with defaults for missing fields", () => {
+    const image = API.createElement({ type: "image", fileId: "file-2" });
+    delete (image as any).status;
+    delete (image as any).scale;
+    delete (image as any).crop;
+
+    const [restoredImage] = restore.restoreElements(
+      [image],
+      null,
+    ) as ExcalidrawImageElement[];
+
+    expect(restoredImage).toEqual(
+      expect.objectContaining({
+        type: "image",
+        fileId: "file-2",
+        status: "pending",
+        scale: [1, 1],
+        crop: null,
+      }),
+    );
+  });
+
+  it("should restore elbow arrow binding with normalized fixedPoint and default mode", () => {
+    const rect = API.createElement({ type: "rectangle", id: "rect" });
+    const arrow = API.createElement({
+      type: "arrow",
+      elbowed: true,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(100, 0)],
+    });
+    Object.assign(arrow, {
+      startBinding: { elementId: rect.id, fixedPoint: [0.5, 0.5] },
+    });
+
+    const restoredArrow = restore
+      .restoreElements([rect, arrow], null, { repairBindings: true })
+      .find((el) => el.id === arrow.id) as ExcalidrawElbowArrowElement;
+
+    expect(restoredArrow.elbowed).toBe(true);
+    expect(restoredArrow.startBinding).toEqual(
+      expect.objectContaining({ elementId: rect.id, mode: "orbit" }),
+    );
+    // exact center fixed point is nudged off-center to avoid ambiguous routing
+    expect(restoredArrow.startBinding!.fixedPoint).not.toEqual([0.5, 0.5]);
+  });
+
+  it("should drop stale fixedSegments of elbow arrows with fewer than 4 points", () => {
+    const fixedSegments = [
+      {
+        start: pointFrom<LocalPoint>(0, 0),
+        end: pointFrom<LocalPoint>(0, 50),
+        index: 1,
+      },
+    ];
+    const shortArrow = API.createElement({
+      type: "arrow",
+      id: "short",
+      elbowed: true,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(0, 50)],
+    });
+    Object.assign(shortArrow, { fixedSegments });
+
+    const longArrow = API.createElement({
+      type: "arrow",
+      id: "long",
+      elbowed: true,
+      points: [
+        pointFrom<LocalPoint>(0, 0),
+        pointFrom<LocalPoint>(0, 50),
+        pointFrom<LocalPoint>(100, 50),
+        pointFrom<LocalPoint>(100, 100),
+      ],
+    });
+    Object.assign(longArrow, { fixedSegments });
+
+    const [restoredShort, restoredLong] = restore.restoreElements(
+      [shortArrow, longArrow],
+      null,
+    ) as ExcalidrawElbowArrowElement[];
+
+    expect(restoredShort.fixedSegments).toBeNull();
+    expect(restoredLong.fixedSegments).toEqual(fixedSegments);
+  });
+
+  it("should reroute unbound elbow arrows with non-orthogonal points when repair is true", () => {
+    const arrow = API.createElement({
+      type: "arrow",
+      elbowed: true,
+      index: "a0" as ExcalidrawElement["index"],
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(100, 100)],
+    });
+
+    expect(validateElbowPoints(arrow.points)).toBe(false);
+
+    const [unrepaired] = restore.restoreElements([arrow], null) as [
+      ExcalidrawElbowArrowElement,
+    ];
+    expect(validateElbowPoints(unrepaired.points)).toBe(false);
+
+    const [repaired] = restore.restoreElements([arrow], null, {
+      repairBindings: true,
+    }) as [ExcalidrawElbowArrowElement];
+
+    expect(repaired.id).toBe(arrow.id);
+    expect(repaired.index).toBe(arrow.index);
+    expect(repaired.points.length).toBeGreaterThan(2);
+    expect(validateElbowPoints(repaired.points)).toBe(true);
+    expect(repaired.points[0]).toEqual([0, 0]);
+    expect(repaired.points[repaired.points.length - 1]).toEqual([100, 100]);
+  });
+
+  it("should mark self-bound elbow arrows with runaway points as deleted", () => {
+    const rect = API.createElement({
+      type: "rectangle",
+      id: "rect",
+      x: 100,
+      y: 100,
+      width: 100,
+      height: 50,
+    });
+    const arrow = API.createElement({
+      type: "arrow",
+      elbowed: true,
+      points: [
+        pointFrom<LocalPoint>(0, 0),
+        pointFrom<LocalPoint>(0, -2e6),
+        pointFrom<LocalPoint>(2e6, -2e6),
+        pointFrom<LocalPoint>(2e6, 10),
+      ],
+      startBinding: {
+        elementId: rect.id,
+        fixedPoint: [0.4, 0],
+        mode: "orbit",
+      },
+      endBinding: {
+        elementId: rect.id,
+        fixedPoint: [1, 0.4],
+        mode: "orbit",
+      },
+    });
+
+    const restoredArrow = restore
+      .restoreElements([rect, arrow], null, { repairBindings: true })
+      .find((el) => el.id === arrow.id) as ExcalidrawElbowArrowElement;
+
+    expect(
+      restoredArrow.points.every(
+        ([x, y]) => Math.abs(x) <= 1e6 && Math.abs(y) <= 1e6,
+      ),
+    ).toBe(true);
+    expect(restoredArrow.isDeleted).toBe(true);
   });
 });

@@ -7,7 +7,10 @@ import type {
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
 
-import { reconcileElements } from "../../data/reconcile";
+import {
+  reconcileElements,
+  shouldDiscardRemoteElement,
+} from "../../data/reconcile";
 
 import type { RemoteExcalidrawElement } from "../../data/reconcile";
 
@@ -383,4 +386,110 @@ describe("elements reconciliation", () => {
     };
     testIdentical([el1, el2], [el2, el1], ["A", "B"]);
   });
+});
+
+describe("shouldDiscardRemoteElement", () => {
+  const EDITING_STATE_KEYS = [
+    "editingTextElement",
+    "resizingElement",
+    "newElement",
+  ] as const;
+
+  const makePair = () => {
+    const local = {
+      id: "A",
+      version: 1,
+      versionNonce: 1,
+      index: "a0",
+    } as unknown as OrderedExcalidrawElement;
+    const remote = {
+      id: "A",
+      version: 2,
+      versionNonce: 1,
+      index: "a0",
+    } as unknown as RemoteExcalidrawElement;
+    return { local, remote };
+  };
+
+  it("accepts a newer remote element when local isn't being edited", () => {
+    const { local, remote } = makePair();
+    expect(shouldDiscardRemoteElement({} as AppState, local, remote)).toBe(
+      false,
+    );
+  });
+
+  it("accepts a remote element with no local counterpart", () => {
+    const { remote } = makePair();
+    expect(
+      shouldDiscardRemoteElement(
+        { editingTextElement: { id: "A" } } as unknown as AppState,
+        undefined,
+        remote,
+      ),
+    ).toBe(false);
+  });
+
+  for (const key of EDITING_STATE_KEYS) {
+    describe(`appState.${key}`, () => {
+      it("discards a newer remote element when local is being edited", () => {
+        const { local, remote } = makePair();
+        expect(
+          shouldDiscardRemoteElement(
+            { [key]: { id: "A" } } as unknown as AppState,
+            local,
+            remote,
+          ),
+        ).toBe(true);
+      });
+
+      it("accepts a newer remote element when a different element is being edited", () => {
+        const { local, remote } = makePair();
+        expect(
+          shouldDiscardRemoteElement(
+            { [key]: { id: "B" } } as unknown as AppState,
+            local,
+            remote,
+          ),
+        ).toBe(false);
+      });
+
+      it("accepts a newer remote element when the edit state is null", () => {
+        const { local, remote } = makePair();
+        expect(
+          shouldDiscardRemoteElement(
+            { [key]: null } as unknown as AppState,
+            local,
+            remote,
+          ),
+        ).toBe(false);
+      });
+    });
+  }
+
+  for (const key of EDITING_STATE_KEYS) {
+    it(`reconcileElements() keeps the locally edited element (appState.${key})`, () => {
+      const local = [
+        { id: "A", version: 1, versionNonce: 1, index: "a0" },
+        { id: "B", version: 1, versionNonce: 1, index: "a1" },
+        { id: "C", version: 1, versionNonce: 1, index: "a2" },
+      ] as unknown as OrderedExcalidrawElement[];
+      const remote = [
+        { id: "A", version: 2, versionNonce: 1, index: "a0" },
+        { id: "B", version: 5, versionNonce: 1, index: "a1" },
+        { id: "C", version: 3, versionNonce: 1, index: "a2" },
+      ] as unknown as RemoteExcalidrawElement[];
+
+      const reconciled = reconcileElements(
+        cloneJSON(local),
+        cloneJSON(remote),
+        { [key]: { id: "B" } } as unknown as AppState,
+      );
+
+      expect(reconciled.map((x) => x.id)).toEqual(["A", "B", "C"]);
+      expect(reconciled.map((x) => x.index)).toEqual(["a0", "a1", "a2"]);
+      // B is being edited locally -> local version survives
+      // A and C aren't -> newer remote versions win
+      expect(reconciled.map((x) => x.version)).toEqual([2, 1, 3]);
+    });
+  }
 });

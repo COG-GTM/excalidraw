@@ -1,9 +1,10 @@
 import { createServer } from "node:http";
 
 const port = Number(process.env.PORT) || 3016;
+const host = "127.0.0.1";
 const endpoint = "/v1/ai/text-to-diagram/chat-streaming";
-const headers = {
-  "Access-Control-Allow-Origin": "*",
+const localOrigin = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const baseHeaders = {
   "Access-Control-Allow-Headers": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Expose-Headers": "X-Ratelimit-Limit, X-Ratelimit-Remaining",
@@ -31,6 +32,17 @@ const delay = (milliseconds) =>
 
 createServer(async (request, response) => {
   const { pathname } = new URL(request.url ?? "/", "http://localhost");
+  const origin = request.headers.origin;
+
+  if (origin && !localOrigin.test(origin)) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+
+  const headers = origin
+    ? { ...baseHeaders, "Access-Control-Allow-Origin": origin, Vary: "Origin" }
+    : baseHeaders;
 
   if (pathname !== endpoint) {
     response.writeHead(404);
@@ -66,6 +78,6 @@ createServer(async (request, response) => {
 
   response.write('data: {"type":"done","finishReason":"stop"}\n\n');
   response.end("data: [DONE]\n\n");
-}).listen(port, () => {
-  console.log(`Mock AI backend listening on port ${port}`);
+}).listen(port, host, () => {
+  console.log(`Mock AI backend listening on http://${host}:${port}`);
 });

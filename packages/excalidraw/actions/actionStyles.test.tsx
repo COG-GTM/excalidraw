@@ -349,10 +349,18 @@ describe("actionStyles", () => {
     API.setElements([source, target]);
 
     API.setSelectedElements([source]);
-    fireEvent.keyDown(document, { ctrlKey: true, altKey: true, code: CODES.C });
+    fireEvent.keyDown(h.app.ownerDocument, {
+      ctrlKey: true,
+      altKey: true,
+      code: CODES.C,
+    });
 
     API.setSelectedElements([target]);
-    fireEvent.keyDown(document, { ctrlKey: true, altKey: true, code: CODES.V });
+    fireEvent.keyDown(h.app.ownerDocument, {
+      ctrlKey: true,
+      altKey: true,
+      code: CODES.V,
+    });
 
     expect(API.getElement(target).strokeColor).toBe("#099268");
   });

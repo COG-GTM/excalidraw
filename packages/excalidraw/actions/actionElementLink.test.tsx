@@ -24,7 +24,7 @@ vi.mock("../clipboard", async (importOriginal) => {
 const { h } = window;
 
 const linkFor = (id: string) => {
-  const url = new URL(window.location.href);
+  const url = new URL(h.app.ownerWindow.location.href);
   url.searchParams.set("element", id);
   return url.toString();
 };

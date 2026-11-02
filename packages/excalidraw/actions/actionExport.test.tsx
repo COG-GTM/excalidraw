@@ -58,7 +58,7 @@ const executeWithValue = (action: Action, value: unknown) => {
 };
 
 const keyEvent = (init: KeyboardEventInit) =>
-  new KeyboardEvent("keydown", init);
+  new h.app.ownerWindow.KeyboardEvent("keydown", init);
 
 describe("actionExport", () => {
   beforeEach(() => {
@@ -327,7 +327,7 @@ describe("actionExport", () => {
       expect(type).toBe("json");
       expect(data.elements.map((el) => el.id)).toEqual(["rect"]);
       expect(data.files).toBe(h.app.files);
-      expect(opts.signal).toBeInstanceOf(AbortSignal);
+      expect(opts.signal).toBeInstanceOf(h.app.ownerWindow.AbortSignal);
       const toasts = setAppState.mock.calls.map(
         ([state]) => (state as any).toast,
       );

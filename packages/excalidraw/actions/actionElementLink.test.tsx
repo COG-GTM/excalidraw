@@ -73,7 +73,9 @@ describe("actionElementLink", () => {
       );
 
       expect(copyTextMock).toHaveBeenCalledTimes(1);
-      const link = new URL(copyTextMock.mock.calls[0][0] as string);
+      const link = new h.app.ownerWindow.URL(
+        copyTextMock.mock.calls[0][0] as string,
+      );
       expect(link.searchParams.get("element")).toBe("rect1");
       expect(result).toEqual({
         appState: {
@@ -101,7 +103,9 @@ describe("actionElementLink", () => {
         h.app,
       );
 
-      const link = new URL(copyTextMock.mock.calls[0][0] as string);
+      const link = new h.app.ownerWindow.URL(
+        copyTextMock.mock.calls[0][0] as string,
+      );
       expect(link.searchParams.get("element")).toBe("group");
     });
 

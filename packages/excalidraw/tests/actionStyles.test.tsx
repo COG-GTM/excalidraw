@@ -145,7 +145,7 @@ describe("actionStyles (programmatic)", () => {
 
   it("keyTests match Ctrl/Cmd+Alt+C and Ctrl/Cmd+Alt+V by code", () => {
     const event = (init: KeyboardEventInit) =>
-      new KeyboardEvent("keydown", init);
+      new h.app.ownerWindow.KeyboardEvent("keydown", init);
 
     expect(
       actionCopyStyles.keyTest!(

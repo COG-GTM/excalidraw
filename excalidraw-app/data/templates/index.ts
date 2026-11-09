@@ -1,5 +1,6 @@
 import { CaptureUpdateAction, getCommonBounds } from "@excalidraw/excalidraw";
 import { restoreElements } from "@excalidraw/excalidraw/data/restore";
+import { duplicateElements } from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
@@ -114,7 +115,11 @@ export const loadTemplateIntoScene = (
     return false;
   }
 
-  const elements = parseTemplateElements(template);
+  // fresh ids so repeated or concurrent loads never reconcile with each other
+  const { duplicatedElements: elements } = duplicateElements({
+    type: "everything",
+    elements: parseTemplateElements(template),
+  });
 
   api.updateScene({
     elements,

@@ -2,6 +2,10 @@
 /// <reference types="vite-plugin-pwa/info" />
 /// <reference types="vite-plugin-svgr/client" />
 interface ImportMetaEnv {
+  // empty-canvas welcome screen variant: templates | ai | launcher
+  // (unset or invalid = default welcome screen)
+  VITE_APP_SPLASH_VARIANT: string;
+
   // The port to run the dev server
   VITE_APP_PORT: string;
 
@@ -46,4 +50,9 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+declare module "*.excalidraw?raw" {
+  const content: string;
+  export default content;
 }

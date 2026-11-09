@@ -64,8 +64,9 @@ export const LauncherSplash = ({
     }
     const template = findTemplateByKeyword(q);
     if (template) {
-      loadTemplateIntoScene(excalidrawAPI, template);
-      setStatus(LAUNCHER_STRINGS.templateLoaded(template.name));
+      if (loadTemplateIntoScene(excalidrawAPI, template)) {
+        setStatus(LAUNCHER_STRINGS.templateLoaded(template.name));
+      }
       return;
     }
     if (isAIEnabled() && appProps.aiEnabled !== false) {

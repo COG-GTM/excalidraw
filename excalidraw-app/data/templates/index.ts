@@ -109,7 +109,11 @@ export const findTemplateByKeyword = (
 export const loadTemplateIntoScene = (
   api: ExcalidrawImperativeAPI,
   template: StarterTemplate,
-) => {
+): boolean => {
+  if (api.getSceneElements().length !== 0) {
+    return false;
+  }
+
   const elements = parseTemplateElements(template);
 
   api.updateScene({
@@ -121,4 +125,5 @@ export const loadTemplateIntoScene = (
     target: getCommonBounds(elements),
     fit: "scale-down",
   });
+  return true;
 };

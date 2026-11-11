@@ -1,5 +1,6 @@
 import { CaptureUpdateAction, getCommonBounds } from "@excalidraw/excalidraw";
 import { restoreElements } from "@excalidraw/excalidraw/data/restore";
+import { duplicateElements } from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
@@ -109,8 +110,16 @@ export const findTemplateByKeyword = (
 export const loadTemplateIntoScene = (
   api: ExcalidrawImperativeAPI,
   template: StarterTemplate,
-) => {
-  const elements = parseTemplateElements(template);
+): boolean => {
+  if (api.getSceneElements().length !== 0) {
+    return false;
+  }
+
+  // fresh ids so repeated or concurrent loads never reconcile with each other
+  const { duplicatedElements: elements } = duplicateElements({
+    type: "everything",
+    elements: parseTemplateElements(template),
+  });
 
   api.updateScene({
     elements,
@@ -121,4 +130,5 @@ export const loadTemplateIntoScene = (
     target: getCommonBounds(elements),
     fit: "scale-down",
   });
+  return true;
 };

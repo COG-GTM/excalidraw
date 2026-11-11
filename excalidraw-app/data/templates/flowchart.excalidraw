@@ -17,7 +17,7 @@
     {"id":"decision-arrow","type":"arrow","x":500,"y":165,"width":80,"height":0,"points":[[0,0],[80,0]],"startBinding":{"elementId":"details","fixedPoint":[1,0.5],"mode":"orbit"},"endBinding":{"elementId":"decision","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"},
     {"id":"account-arrow","type":"arrow","x":760,"y":115,"width":90,"height":-40,"points":[[0,0],[90,-40]],"startBinding":{"elementId":"decision","fixedPoint":[1,0.3],"mode":"orbit"},"endBinding":{"elementId":"account","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"},
     {"id":"missing-arrow","type":"arrow","x":760,"y":215,"width":90,"height":40,"points":[[0,0],[90,40]],"startBinding":{"elementId":"decision","fixedPoint":[1,0.7],"mode":"orbit"},"endBinding":{"elementId":"missing","fixedPoint":[0,0.5],"mode":"orbit"},"endArrowhead":"arrow"},
-    {"id":"retry-arrow","type":"arrow","x":820,"y":255,"width":-400,"height":-90,"points":[[0,0],[-400,-90]],"startBinding":{"elementId":"missing","fixedPoint":[0,0.5],"mode":"orbit"},"endBinding":{"elementId":"details","fixedPoint":[0.5,1],"mode":"orbit"},"endArrowhead":"arrow"}
+    {"id":"retry-arrow","type":"arrow","x":955,"y":295,"width":550,"height":130,"points":[[0,0],[0,40],[-550,40],[-550,-90]],"startBinding":{"elementId":"missing","fixedPoint":[0.5,1],"mode":"orbit"},"endBinding":{"elementId":"details","fixedPoint":[0.5,1],"mode":"orbit"},"endArrowhead":"arrow"}
   ],
   "appState": {"viewBackgroundColor":"#ffffff","gridSize":null},
   "files": {}

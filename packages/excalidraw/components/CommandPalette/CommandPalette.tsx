@@ -311,6 +311,7 @@ function CommandPaletteInner({
         actionManager.actions.ungroup,
         actionManager.actions.cut,
         actionManager.actions.copy,
+        actionManager.actions.selectSameType,
         actionManager.actions.deleteSelectedElements,
         actionManager.actions.wrapSelectionInFrame,
         actionManager.actions.copyStyles,

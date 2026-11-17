@@ -127,6 +127,40 @@ describe("actionSelectAllWithSameOpacity", () => {
     expect(h.state.selectedGroupIds).toEqual({ g1: true });
   });
 
+  it("does not start arrow editing when the matched arrow's group is expanded", () => {
+    const arrow = API.createElement({
+      type: "arrow",
+      opacity: 50,
+      groupIds: ["g1"],
+    });
+    const rect = API.createElement({
+      type: "rectangle",
+      opacity: 100,
+      groupIds: ["g1"],
+    });
+    API.setElements([arrow, rect]);
+    act(() => {
+      h.setState({ selectedElementIds: { [arrow.id]: true } });
+    });
+
+    API.executeAction(actionSelectAllWithSameOpacity);
+
+    expect(selectedIds().sort()).toEqual([arrow.id, rect.id].sort());
+    expect(h.state.selectedLinearElement).toBeNull();
+  });
+
+  it("starts arrow editing when a single arrow is matched", () => {
+    const arrow = API.createElement({ type: "arrow", opacity: 50 });
+    const rect = API.createElement({ type: "rectangle", opacity: 100 });
+    API.setElements([arrow, rect]);
+    API.setSelectedElements([arrow]);
+
+    API.executeAction(actionSelectAllWithSameOpacity);
+
+    expect(selectedIds()).toEqual([arrow.id]);
+    expect(h.state.selectedLinearElement?.elementId).toBe(arrow.id);
+  });
+
   it("is only available when something is selected", () => {
     const a = API.createElement({ type: "rectangle", opacity: 50 });
     API.setElements([a]);

@@ -56,20 +56,24 @@ export const actionSelectAllWithSameOpacity = register({
       {},
     );
 
+    const nextSelection = selectGroupsForSelectedElements(
+      {
+        editingGroupId: null,
+        selectedElementIds,
+      },
+      getNonDeletedElements(elements),
+      appState,
+      app,
+    );
+
     return {
       appState: {
         ...appState,
-        ...selectGroupsForSelectedElements(
-          {
-            editingGroupId: null,
-            selectedElementIds,
-          },
-          getNonDeletedElements(elements),
-          appState,
-          app,
-        ),
+        ...nextSelection,
         selectedLinearElement:
-          matchingElements.length === 1 && isLinearElement(matchingElements[0])
+          Object.keys(nextSelection.selectedElementIds).length === 1 &&
+          matchingElements.length === 1 &&
+          isLinearElement(matchingElements[0])
             ? new LinearElementEditor(
                 matchingElements[0] as NonDeleted<ExcalidrawLinearElement>,
                 arrayToMap(elements),

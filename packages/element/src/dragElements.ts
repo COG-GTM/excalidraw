@@ -107,6 +107,8 @@ export const dragSelectedElements = (
     Array.from(elementsToUpdate, (el) => el.id),
   );
 
+  const simultaneouslyUpdated = Array.from(elementsToUpdate);
+
   elementsToUpdate.forEach((element) => {
     const isArrow = !isArrowElement(element);
     const isStartBoundElementSelected =
@@ -137,7 +139,7 @@ export const dragSelectedElements = (
         );
       }
       updateBoundElements(element, scene, {
-        simultaneouslyUpdated: Array.from(elementsToUpdate),
+        simultaneouslyUpdated,
       });
     } else if (
       // NOTE: Add a little initial drag to the arrow dragging when the arrow

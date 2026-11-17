@@ -171,6 +171,7 @@
     "statusPublished": "Published",
     "sidebarLock": "Keep sidebar open",
     "selectAllElementsInFrame": "Select all elements in frame",
+    "selectAllWithSameBackgroundColor": "Select all with same background color",
     "removeAllElementsFromFrame": "Remove all elements from frame",
     "eyeDropper": "Pick color from canvas",
     "textToDiagram": "Text to diagram",

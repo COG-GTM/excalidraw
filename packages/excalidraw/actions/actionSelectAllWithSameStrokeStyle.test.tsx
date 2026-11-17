@@ -115,6 +115,38 @@ describe("actionSelectAllWithSameStrokeStyle", () => {
     expect(h.state.selectedGroupIds).toEqual({ g1: true });
   });
 
+  it("enables linear editing only for a single selected linear element", () => {
+    const arrow = API.createElement({ type: "arrow", strokeStyle: "dotted" });
+    const solid = API.createElement({ strokeStyle: "solid" });
+    API.setElements([arrow, solid]);
+    API.setSelectedElements([arrow]);
+
+    API.executeAction(actionSelectAllWithSameStrokeStyle);
+
+    expect(selectedIds()).toEqual([arrow.id]);
+    expect(h.state.selectedLinearElement?.elementId).toBe(arrow.id);
+  });
+
+  it("does not enable linear editing when the only match is an arrow inside a group", () => {
+    const arrow = API.createElement({
+      type: "arrow",
+      strokeStyle: "dotted",
+      groupIds: ["g1"],
+    });
+    const groupMate = API.createElement({
+      strokeStyle: "solid",
+      groupIds: ["g1"],
+    });
+    API.setElements([arrow, groupMate]);
+    API.setSelectedElements([arrow]);
+
+    API.executeAction(actionSelectAllWithSameStrokeStyle);
+
+    expect(selectedIds().sort()).toEqual([arrow.id, groupMate.id].sort());
+    expect(h.state.selectedGroupIds).toEqual({ g1: true });
+    expect(h.state.selectedLinearElement).toBeNull();
+  });
+
   it("is hidden when nothing is selected", () => {
     const rect = API.createElement({ strokeStyle: "dashed" });
     API.setElements([rect]);

@@ -325,6 +325,7 @@ import {
   actionToggleArrowBinding,
   actionToggleMidpointSnapping,
   actionToggleCropEditor,
+  actionSelectAllWithSameBackgroundColor,
 } from "../actions";
 import { actionWrapTextInContainer } from "../actions/actionBoundText";
 import { actionPaste } from "../actions/actionClipboard";
@@ -13710,6 +13711,7 @@ class App extends React.Component<AppProps, AppState> {
       CONTEXT_MENU_SEPARATOR,
       actionCopyStyles,
       actionPasteStyles,
+      actionSelectAllWithSameBackgroundColor,
       CONTEXT_MENU_SEPARATOR,
       actionGroup,
       actionTextAutoResize,

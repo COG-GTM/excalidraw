@@ -2065,7 +2065,16 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
           scene,
           {
             changedElements: changed,
-            simultaneouslyUpdated: restoredArrows,
+            simultaneouslyUpdated: repositionedElementIds.has(element.id)
+              ? restoredArrows
+              : // the delta didn't move this element, so arrows it didn't
+                // touch either are already where they belong
+                restoredArrows.concat(
+                  (element.boundElements ?? []).flatMap(({ id }) => {
+                    const arrow = elementsMap.get(id);
+                    return arrow && !changed.has(id) ? [arrow] : [];
+                  }),
+                ),
           },
         );
       }

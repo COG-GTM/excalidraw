@@ -56,6 +56,14 @@ const setupScene = () => {
     width: 100,
     height: 100,
   });
+  const rect4 = API.createElement({
+    type: "rectangle",
+    id: "rect4",
+    x: 300,
+    y: 300,
+    width: 100,
+    height: 100,
+  });
   // points placed by hand (as in a loaded file), not where the bindings
   // would route them
   const shortArrow = API.createElement({
@@ -96,6 +104,27 @@ const setupScene = () => {
       mode: "orbit",
     },
   });
+  // not attached to the dragged shape, but to a shape that shares an arrow with it
+  const neighborArrow = API.createElement({
+    type: "arrow",
+    id: "neighborArrow",
+    x: 103,
+    y: 350,
+    width: 194,
+    height: 0,
+    points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(194, 0)],
+    startBinding: {
+      elementId: rect3.id,
+      fixedPoint: [1.0294, 0.5],
+      mode: "orbit",
+    },
+    endBinding: {
+      elementId: rect4.id,
+      fixedPoint: [-0.0294, 0.5],
+      mode: "orbit",
+    },
+  });
+
   const withBound = (
     element: ExcalidrawElement,
     ...arrows: ExcalidrawElement[]
@@ -111,9 +140,11 @@ const setupScene = () => {
     elements: [
       withBound(rect1, shortArrow),
       withBound(rect2, shortArrow, longArrow),
-      withBound(rect3, longArrow),
+      withBound(rect3, longArrow, neighborArrow),
+      withBound(rect4, neighborArrow),
       shortArrow,
       longArrow,
+      neighborArrow,
     ],
     captureUpdate: CaptureUpdateAction.NEVER,
   });
@@ -143,6 +174,7 @@ describe("undo/redo of a single dragged bound shape", () => {
     expect(dragged.rect2.y).toBe(100);
     expect(dragged.rect1).toEqual(before.rect1);
     expect(dragged.rect3).toEqual(before.rect3);
+    expect(dragged.neighborArrow).toEqual(before.neighborArrow);
 
     Keyboard.undo();
     expect(snapshotPositions()).toEqual(before);

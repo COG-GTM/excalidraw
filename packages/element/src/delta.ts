@@ -47,6 +47,7 @@ import { mutateElement, newElementWith } from "./mutateElement";
 import { getBoundTextElementId, redrawTextBoundingBox } from "./textElement";
 import {
   hasBoundTextElement,
+  isArrowElement,
   isBindableElement,
   isBoundToContainer,
   isTextElement,
@@ -63,6 +64,8 @@ import { Scene } from "./Scene";
 import type { BindableProp, BindingProp } from "./binding";
 
 import type { ElementUpdate } from "./mutateElement";
+
+const GEOMETRY_PROPS = ["x", "y", "width", "height", "angle", "points"];
 
 /**
  * Represents the difference between two objects of the same type.
@@ -1393,6 +1396,7 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
   ): [SceneElementsMap, boolean] {
     let nextElements = new Map(elements) as SceneElementsMap;
     let changedElements: Map<string, OrderedExcalidrawElement>;
+    let restoredElementIds = new Set<string>();
 
     const flags: ApplyToFlags = {
       containsVisibleDifference: false,
@@ -1419,6 +1423,12 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
         nextElements,
         flags.applyDirection,
       );
+
+      restoredElementIds = ElementsDelta.getRepositionedElementIds([
+        [this.added, addedElements],
+        [this.removed, removedElements],
+        [this.updated, updatedElements],
+      ]);
 
       // TODO: #7348 validate elements semantically and syntactically the changed elements, in case they would result data integrity issues
       changedElements = new Map([
@@ -1450,7 +1460,11 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
         flags,
       );
 
-      ElementsDelta.redrawElements(nextElements, changedElements);
+      ElementsDelta.redrawElements(
+        nextElements,
+        changedElements,
+        restoredElementIds,
+      );
     } catch (e) {
       console.error(
         `Couldn't mutate elements after applying elements change`,
@@ -1889,9 +1903,33 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
     BindableElement.rebindAffected(nextElements, nextElement(), updater);
   }
 
+  private static getRepositionedElementIds(
+    applied: [
+      Record<string, Delta<ElementPartial>>,
+      Map<string, OrderedExcalidrawElement>,
+    ][],
+  ) {
+    const ids = new Set<string>();
+    for (const [deltas, appliedElements] of applied) {
+      for (const id of appliedElements.keys()) {
+        const delta = deltas[id];
+        if (
+          delta &&
+          GEOMETRY_PROPS.some(
+            (prop) => prop in delta.deleted || prop in delta.inserted,
+          )
+        ) {
+          ids.add(id);
+        }
+      }
+    }
+    return ids;
+  }
+
   public static redrawElements(
     nextElements: SceneElementsMap,
     changedElements: Map<string, OrderedExcalidrawElement>,
+    restoredElementIds: ReadonlySet<string> = new Set(),
   ) {
     try {
       // we don't have an up-to-date scene, as we can be just in the middle of applying history entry
@@ -1902,7 +1940,11 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
       ElementsDelta.redrawTextBoundingBoxes(tempScene, changedElements);
 
       // needs ordered nextElements to avoid z-index binding issues
-      ElementsDelta.redrawBoundArrows(tempScene, changedElements);
+      ElementsDelta.redrawBoundArrows(
+        tempScene,
+        changedElements,
+        restoredElementIds,
+      );
     } catch (e) {
       console.error(`Couldn't redraw elements`, e);
 
@@ -1965,7 +2007,25 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
   private static redrawBoundArrows(
     scene: Scene,
     changed: Map<string, OrderedExcalidrawElement>,
+    restoredElementIds: ReadonlySet<string>,
   ) {
+    // arrows whose geometry was restored by this delta together with every
+    // element they are bound to already hold their exact previous position,
+    // so re-routing them from their bindings would only make them drift
+    const restoredArrows: NonDeletedExcalidrawElement[] = [];
+    for (const element of changed.values()) {
+      if (
+        !element.isDeleted &&
+        isArrowElement(element) &&
+        restoredElementIds.has(element.id) &&
+        [element.startBinding, element.endBinding].every(
+          (binding) => !binding || restoredElementIds.has(binding.elementId),
+        )
+      ) {
+        restoredArrows.push(element as NonDeletedExcalidrawElement);
+      }
+    }
+
     for (const element of changed.values()) {
       if (!element.isDeleted && isBindableElement(element)) {
         // TODO: with precise bindings this is quite expensive, so consider optimisation so it's only triggered when the arrow does not intersect (imprecise) element bounds
@@ -1974,6 +2034,7 @@ export class ElementsDelta implements DeltaContainer<SceneElementsMap> {
           scene,
           {
             changedElements: changed,
+            simultaneouslyUpdated: restoredArrows,
           },
         );
       }

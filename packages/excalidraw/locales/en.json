@@ -10,6 +10,7 @@
     "chartType_radar": "Radar chart",
     "chartType_plaintext": "Plain text",
     "selectAll": "Select all",
+    "selectAllWithSameStrokeWidth": "Select all with same stroke width",
     "multiSelect": "Add element to selection",
     "moveCanvas": "Move canvas",
     "cut": "Cut",

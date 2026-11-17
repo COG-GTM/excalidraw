@@ -60,23 +60,34 @@ export const actionSelectAllWithSameStrokeWidth = register({
       {},
     );
 
+    const nextSelection = selectGroupsForSelectedElements(
+      {
+        editingGroupId: null,
+        selectedElementIds,
+      },
+      getNonDeletedElements(elements),
+      appState,
+      app,
+    );
+
+    const elementsMap = arrayToMap(elements);
+    const finalSelectedIds = Object.keys(
+      nextSelection.selectedElementIds,
+    ).filter((id) => nextSelection.selectedElementIds[id]);
+    const singleSelected =
+      finalSelectedIds.length === 1
+        ? elementsMap.get(finalSelectedIds[0])
+        : undefined;
+
     return {
       appState: {
         ...appState,
-        ...selectGroupsForSelectedElements(
-          {
-            editingGroupId: null,
-            selectedElementIds,
-          },
-          getNonDeletedElements(elements),
-          appState,
-          app,
-        ),
+        ...nextSelection,
         selectedLinearElement:
-          matchingElements.length === 1 && isLinearElement(matchingElements[0])
+          singleSelected && isLinearElement(singleSelected)
             ? new LinearElementEditor(
-                matchingElements[0] as NonDeleted<ExcalidrawLinearElement>,
-                arrayToMap(elements),
+                singleSelected as NonDeleted<ExcalidrawLinearElement>,
+                elementsMap,
               )
             : null,
       },

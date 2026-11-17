@@ -111,6 +111,40 @@ describe("actionSelectAllWithSameStrokeWidth", () => {
     expect(selectedIds().sort()).toEqual([a.id, b.id, seed.id].sort());
   });
 
+  it("sets selectedLinearElement for a single matching linear element", () => {
+    const arrow = API.createElement({ type: "arrow", strokeWidth: 4 });
+    const rect = API.createElement({ type: "rectangle", strokeWidth: 1 });
+    API.setElements([arrow, rect]);
+    API.setSelectedElements([arrow]);
+
+    API.executeAction(actionSelectAllWithSameStrokeWidth);
+
+    expect(selectedIds()).toEqual([arrow.id]);
+    expect(h.state.selectedLinearElement?.elementId).toBe(arrow.id);
+  });
+
+  it("does not set selectedLinearElement when the matching arrow is expanded to its group", () => {
+    const arrow = API.createElement({
+      type: "arrow",
+      strokeWidth: 4,
+      groupIds: ["g1"],
+    });
+    const groupMate = API.createElement({
+      type: "rectangle",
+      strokeWidth: 1,
+      groupIds: ["g1"],
+    });
+    const other = API.createElement({ type: "ellipse", strokeWidth: 1 });
+    API.setElements([arrow, groupMate, other]);
+    API.setSelectedElements([arrow]);
+
+    API.executeAction(actionSelectAllWithSameStrokeWidth);
+
+    expect(h.state.selectedGroupIds).toEqual({ g1: true });
+    expect(selectedIds().sort()).toEqual([arrow.id, groupMate.id].sort());
+    expect(h.state.selectedLinearElement).toBeNull();
+  });
+
   it("is only available when something is selected", () => {
     const rect = API.createElement({ type: "rectangle", strokeWidth: 1 });
     API.setElements([rect]);

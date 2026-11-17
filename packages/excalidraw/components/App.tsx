@@ -335,6 +335,7 @@ import {
   actionSelectAllElementsInFrame,
   actionWrapSelectionInFrame,
 } from "../actions/actionFrame";
+import { actionSelectAllWithSameBackgroundColor } from "../actions/actionSelectAllWithSameBackgroundColor";
 import { createRedoAction, createUndoAction } from "../actions/actionHistory";
 import { actionTextAutoResize } from "../actions/actionTextAutoResize";
 import { actionToggleViewMode } from "../actions/actionToggleViewMode";
@@ -13710,6 +13711,7 @@ class App extends React.Component<AppProps, AppState> {
       CONTEXT_MENU_SEPARATOR,
       actionCopyStyles,
       actionPasteStyles,
+      actionSelectAllWithSameBackgroundColor,
       CONTEXT_MENU_SEPARATOR,
       actionGroup,
       actionTextAutoResize,

@@ -171,6 +171,7 @@
     "statusPublished": "Publié",
     "sidebarLock": "Maintenir la barre latérale ouverte",
     "selectAllElementsInFrame": "Sélectionner tous les éléments du cadre",
+    "selectAllWithSameBackgroundColor": "Tout sélectionner avec la même couleur d’arrière-plan",
     "removeAllElementsFromFrame": "Supprimer tous les éléments du cadre",
     "eyeDropper": "Choisir la couleur depuis le canevas",
     "textToDiagram": "Texte vers diagramme",

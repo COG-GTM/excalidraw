@@ -369,6 +369,7 @@ function CommandPaletteInner({
         actionManager.actions.objectsSnapMode,
         actionManager.actions.toggleShortcuts,
         actionManager.actions.selectAll,
+        actionManager.actions.selectSameColor,
         actionManager.actions.toggleElementLock,
         actionManager.actions.unlockAllElements,
         actionManager.actions.stats,

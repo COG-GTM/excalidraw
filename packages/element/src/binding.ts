@@ -1426,10 +1426,31 @@ const doesNeedUpdate = (
   );
 };
 
+const EMPTY_ID_SET: ReadonlySet<ExcalidrawElement["id"]> = new Set();
+
+// PERF: callers pass the same `simultaneouslyUpdated` array for every element
+// they update, so cache the id set per array to keep bulk updates O(n).
+const simultaneouslyUpdatedIdsCache = new WeakMap<
+  readonly ExcalidrawElement[],
+  { length: number; ids: ReadonlySet<ExcalidrawElement["id"]> }
+>();
+
 const getSimultaneouslyUpdatedElementIds = (
   simultaneouslyUpdated: readonly ExcalidrawElement[] | undefined,
-): Set<ExcalidrawElement["id"]> => {
-  return new Set((simultaneouslyUpdated || []).map((element) => element.id));
+): ReadonlySet<ExcalidrawElement["id"]> => {
+  if (!simultaneouslyUpdated?.length) {
+    return EMPTY_ID_SET;
+  }
+  const cached = simultaneouslyUpdatedIdsCache.get(simultaneouslyUpdated);
+  if (cached && cached.length === simultaneouslyUpdated.length) {
+    return cached.ids;
+  }
+  const ids = new Set(simultaneouslyUpdated.map((element) => element.id));
+  simultaneouslyUpdatedIdsCache.set(simultaneouslyUpdated, {
+    length: simultaneouslyUpdated.length,
+    ids,
+  });
+  return ids;
 };
 
 export const getHeadingForElbowArrowSnap = (

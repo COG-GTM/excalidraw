@@ -378,6 +378,47 @@ exports[`contextMenu element > right-clicking on a group should select whole gro
           "category": "element",
         },
       },
+      {
+        "icon": <svg
+          aria-hidden="true"
+          className=""
+          fill="none"
+          focusable="false"
+          role="img"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <g
+            strokeWidth="2"
+          >
+            <path
+              d="M0 0h24v24H0z"
+              fill="none"
+              stroke="none"
+            />
+            <path
+              d="M5 12h2"
+            />
+            <path
+              d="M17 12h2"
+            />
+            <path
+              d="M11 12h2"
+            />
+          </g>
+        </svg>,
+        "label": "labels.selectAllWithSameStrokeStyle",
+        "name": "selectAllWithSameStrokeStyle",
+        "perform": [Function],
+        "predicate": [Function],
+        "trackEvent": {
+          "category": "element",
+        },
+        "viewMode": false,
+      },
       "separator",
       {
         "PanelComponent": [Function],
@@ -5101,6 +5142,47 @@ exports[`contextMenu element > shows 'Group selection' in context menu for multi
           "category": "element",
         },
       },
+      {
+        "icon": <svg
+          aria-hidden="true"
+          className=""
+          fill="none"
+          focusable="false"
+          role="img"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <g
+            strokeWidth="2"
+          >
+            <path
+              d="M0 0h24v24H0z"
+              fill="none"
+              stroke="none"
+            />
+            <path
+              d="M5 12h2"
+            />
+            <path
+              d="M17 12h2"
+            />
+            <path
+              d="M11 12h2"
+            />
+          </g>
+        </svg>,
+        "label": "labels.selectAllWithSameStrokeStyle",
+        "name": "selectAllWithSameStrokeStyle",
+        "perform": [Function],
+        "predicate": [Function],
+        "trackEvent": {
+          "category": "element",
+        },
+        "viewMode": false,
+      },
       "separator",
       {
         "PanelComponent": [Function],
@@ -6323,6 +6405,47 @@ exports[`contextMenu element > shows 'Ungroup selection' in context menu for gro
         "trackEvent": {
           "category": "element",
         },
+      },
+      {
+        "icon": <svg
+          aria-hidden="true"
+          className=""
+          fill="none"
+          focusable="false"
+          role="img"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <g
+            strokeWidth="2"
+          >
+            <path
+              d="M0 0h24v24H0z"
+              fill="none"
+              stroke="none"
+            />
+            <path
+              d="M5 12h2"
+            />
+            <path
+              d="M17 12h2"
+            />
+            <path
+              d="M11 12h2"
+            />
+          </g>
+        </svg>,
+        "label": "labels.selectAllWithSameStrokeStyle",
+        "name": "selectAllWithSameStrokeStyle",
+        "perform": [Function],
+        "predicate": [Function],
+        "trackEvent": {
+          "category": "element",
+        },
+        "viewMode": false,
       },
       "separator",
       {
@@ -8293,6 +8416,47 @@ exports[`contextMenu element > shows context menu for element > [end of test] ap
           "category": "element",
         },
       },
+      {
+        "icon": <svg
+          aria-hidden="true"
+          className=""
+          fill="none"
+          focusable="false"
+          role="img"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <g
+            strokeWidth="2"
+          >
+            <path
+              d="M0 0h24v24H0z"
+              fill="none"
+              stroke="none"
+            />
+            <path
+              d="M5 12h2"
+            />
+            <path
+              d="M17 12h2"
+            />
+            <path
+              d="M11 12h2"
+            />
+          </g>
+        </svg>,
+        "label": "labels.selectAllWithSameStrokeStyle",
+        "name": "selectAllWithSameStrokeStyle",
+        "perform": [Function],
+        "predicate": [Function],
+        "trackEvent": {
+          "category": "element",
+        },
+        "viewMode": false,
+      },
       "separator",
       {
         "PanelComponent": [Function],
@@ -9289,6 +9453,47 @@ exports[`contextMenu element > shows context menu for element > [end of test] ap
         "trackEvent": {
           "category": "element",
         },
+      },
+      {
+        "icon": <svg
+          aria-hidden="true"
+          className=""
+          fill="none"
+          focusable="false"
+          role="img"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <g
+            strokeWidth="2"
+          >
+            <path
+              d="M0 0h24v24H0z"
+              fill="none"
+              stroke="none"
+            />
+            <path
+              d="M5 12h2"
+            />
+            <path
+              d="M17 12h2"
+            />
+            <path
+              d="M11 12h2"
+            />
+          </g>
+        </svg>,
+        "label": "labels.selectAllWithSameStrokeStyle",
+        "name": "selectAllWithSameStrokeStyle",
+        "perform": [Function],
+        "predicate": [Function],
+        "trackEvent": {
+          "category": "element",
+        },
+        "viewMode": false,
       },
       "separator",
       {

@@ -1,7 +1,12 @@
 import { pointFrom } from "../src/point";
 import {
   convexHull,
+  polygon,
   polygonArea,
+  polygonFromPoints,
+  polygonIncludesPoint,
+  polygonIncludesPointNonZero,
+  polygonIsClosed,
   polygonSignedArea,
   simplifyConvexPolygon,
 } from "../src/polygon";
@@ -116,5 +121,113 @@ describe("simplifyConvexPolygon", () => {
     const two = square.slice(0, 2);
 
     expect(simplifyConvexPolygon(two, 0.4)).toEqual(two);
+  });
+});
+
+describe("polygon construction", () => {
+  it("closes an open polygon by repeating the first vertex", () => {
+    const p = polygon(...square);
+
+    expect(p).toHaveLength(5);
+    expect(p[4]).toEqual(square[0]);
+  });
+
+  it("leaves an already closed polygon as-is", () => {
+    const closed = [...square, square[0]];
+
+    expect(polygonFromPoints(closed)).toBe(closed);
+  });
+
+  it("closes the polygon built from a point array", () => {
+    expect(polygonFromPoints(square)).toEqual([...square, square[0]]);
+  });
+});
+
+describe("polygonIsClosed", () => {
+  it("is true when the last vertex matches the first", () => {
+    expect(polygonIsClosed([...square, square[0]])).toBe(true);
+  });
+
+  it("is false when the last vertex differs from the first", () => {
+    expect(polygonIsClosed(square)).toBe(false);
+  });
+
+  it("respects the tolerance", () => {
+    const almost = [...square, pointFrom<GlobalPoint>(0.5, 0.5)];
+
+    expect(polygonIsClosed(almost)).toBe(false);
+    expect(polygonIsClosed(almost, 1)).toBe(true);
+  });
+});
+
+describe("polygonIncludesPoint", () => {
+  const closed = polygon(...square);
+
+  it("finds points inside the polygon", () => {
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, 5), closed)).toBe(
+      true,
+    );
+  });
+
+  it("rejects points outside the polygon", () => {
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(15, 5), closed)).toBe(
+      false,
+    );
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, -1), closed)).toBe(
+      false,
+    );
+  });
+
+  it("handles concave polygons", () => {
+    // A "U" shape: the notch between the arms is outside.
+    const u = polygon<GlobalPoint>(
+      pointFrom(0, 0),
+      pointFrom(3, 0),
+      pointFrom(3, 10),
+      pointFrom(7, 10),
+      pointFrom(7, 0),
+      pointFrom(10, 0),
+      pointFrom(10, 12),
+      pointFrom(0, 12),
+    );
+
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, 5), u)).toBe(false);
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(1, 5), u)).toBe(true);
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, 11), u)).toBe(true);
+  });
+});
+
+describe("polygonIncludesPointNonZero", () => {
+  it("finds points inside a polygon of either winding", () => {
+    expect(polygonIncludesPointNonZero([5, 5], square)).toBe(true);
+    expect(polygonIncludesPointNonZero([5, 5], [...square].reverse())).toBe(
+      true,
+    );
+  });
+
+  it("rejects points outside the polygon", () => {
+    expect(polygonIncludesPointNonZero([15, 5], square)).toBe(false);
+    expect(polygonIncludesPointNonZero([-5, 5], square)).toBe(false);
+    expect(polygonIncludesPointNonZero([5, 15], square)).toBe(false);
+  });
+
+  it("counts self-overlapping regions as inside, unlike even-odd", () => {
+    // A pentagram: its center is wound twice.
+    const star: GlobalPoint[] = [0, 2, 4, 1, 3].map((i) =>
+      pointFrom(
+        Math.cos((i * 2 * Math.PI) / 5 - Math.PI / 2) * 10,
+        Math.sin((i * 2 * Math.PI) / 5 - Math.PI / 2) * 10,
+      ),
+    );
+    const center = pointFrom<GlobalPoint>(0, 0);
+
+    expect(polygonIncludesPointNonZero(center, star)).toBe(true);
+    expect(polygonIncludesPoint(center, polygon(...star))).toBe(false);
+  });
+});
+
+describe("simplifyConvexPolygon fallback", () => {
+  it("returns the input when fewer than three corners clear the threshold", () => {
+    expect(simplifyConvexPolygon(square, 10)).toEqual(square);
   });
 });

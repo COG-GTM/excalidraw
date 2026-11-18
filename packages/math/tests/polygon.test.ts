@@ -1,7 +1,12 @@
 import { pointFrom } from "../src/point";
 import {
   convexHull,
+  polygon,
   polygonArea,
+  polygonFromPoints,
+  polygonIncludesPoint,
+  polygonIncludesPointNonZero,
+  polygonIsClosed,
   polygonSignedArea,
   simplifyConvexPolygon,
 } from "../src/polygon";
@@ -116,5 +121,122 @@ describe("simplifyConvexPolygon", () => {
     const two = square.slice(0, 2);
 
     expect(simplifyConvexPolygon(two, 0.4)).toEqual(two);
+  });
+});
+
+describe("polygon construction", () => {
+  it("closes an open polygon", () => {
+    const p = polygon(...square);
+
+    expect(p).toHaveLength(5);
+    expect(p[4]).toEqual(square[0]);
+    expect(polygonFromPoints(square)).toEqual(p);
+  });
+
+  it("keeps an already closed polygon as-is", () => {
+    const closed = [...square, square[0]];
+
+    expect(polygonFromPoints(closed)).toBe(closed);
+  });
+
+  it("detects closure within a tolerance", () => {
+    expect(polygonIsClosed(square)).toBe(false);
+    expect(polygonIsClosed([...square, pointFrom<GlobalPoint>(0.5, 0)])).toBe(
+      false,
+    );
+    expect(
+      polygonIsClosed([...square, pointFrom<GlobalPoint>(0.5, 0)], 1),
+    ).toBe(true);
+  });
+});
+
+describe("polygonIncludesPoint", () => {
+  const closedSquare = polygon(...square);
+
+  it("finds points inside", () => {
+    expect(polygonIncludesPoint(pointFrom(5, 5), closedSquare)).toBe(true);
+    expect(polygonIncludesPoint(pointFrom(0.1, 9.9), closedSquare)).toBe(true);
+  });
+
+  it("rejects points outside", () => {
+    expect(polygonIncludesPoint(pointFrom(15, 5), closedSquare)).toBe(false);
+    expect(polygonIncludesPoint(pointFrom(-1, 5), closedSquare)).toBe(false);
+    expect(polygonIncludesPoint(pointFrom(5, 11), closedSquare)).toBe(false);
+  });
+
+  it("handles concave polygons", () => {
+    // U shape with the notch between x = 3..7 above y = 4
+    const u = polygon<GlobalPoint>(
+      pointFrom(0, 0),
+      pointFrom(10, 0),
+      pointFrom(10, 10),
+      pointFrom(7, 10),
+      pointFrom(7, 4),
+      pointFrom(3, 4),
+      pointFrom(3, 10),
+      pointFrom(0, 10),
+    );
+
+    expect(polygonIncludesPoint(pointFrom(5, 2), u)).toBe(true);
+    expect(polygonIncludesPoint(pointFrom(1, 8), u)).toBe(true);
+    expect(polygonIncludesPoint(pointFrom(5, 8), u)).toBe(false);
+  });
+});
+
+describe("polygonIncludesPointNonZero", () => {
+  it("finds points inside regardless of winding direction", () => {
+    expect(polygonIncludesPointNonZero(pointFrom(5, 5), square)).toBe(true);
+    expect(
+      polygonIncludesPointNonZero(pointFrom(5, 5), [...square].reverse()),
+    ).toBe(true);
+  });
+
+  it("rejects points outside", () => {
+    expect(polygonIncludesPointNonZero(pointFrom(15, 5), square)).toBe(false);
+    expect(
+      polygonIncludesPointNonZero(pointFrom(-5, 5), [...square].reverse()),
+    ).toBe(false);
+  });
+
+  it("treats the core of a self-overlapping star as inside, unlike even-odd", () => {
+    const star: GlobalPoint[] = Array.from({ length: 5 }, (_, i) => {
+      const angle = ((-90 + i * 144) * Math.PI) / 180;
+      return pointFrom(Math.cos(angle) * 10, Math.sin(angle) * 10);
+    });
+    const center = pointFrom<GlobalPoint>(0, 0);
+
+    expect(polygonIncludesPointNonZero(center, star)).toBe(true);
+    expect(polygonIncludesPoint(center, polygon(...star))).toBe(false);
+  });
+});
+
+describe("convexHull and simplifyConvexPolygon fallbacks", () => {
+  it("returns collinear input unchanged", () => {
+    const line: GlobalPoint[] = [
+      pointFrom(0, 0),
+      pointFrom(5, 0),
+      pointFrom(10, 0),
+    ];
+
+    expect(convexHull(line)).toEqual(line);
+  });
+
+  it("returns the polygon unchanged when too few corners survive", () => {
+    expect(simplifyConvexPolygon(square, 10)).toEqual(square);
+  });
+
+  it("measures a turn across the ±π seam as a shallow turn", () => {
+    // at (0, 0) the heading flips from about -174° to +174°: an ~11° turn
+    const quad: GlobalPoint[] = [
+      pointFrom(10, 1),
+      pointFrom(0, 0),
+      pointFrom(-10, 1),
+      pointFrom(0, 20),
+    ];
+
+    const simplified = simplifyConvexPolygon(quad, 0.5);
+
+    expect(simplified).toHaveLength(3);
+    expect(simplified).not.toContainEqual([0, 0]);
   });
 });

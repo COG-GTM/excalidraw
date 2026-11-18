@@ -1,7 +1,12 @@
 import { pointFrom } from "../src/point";
 import {
   convexHull,
+  polygon,
   polygonArea,
+  polygonFromPoints,
+  polygonIncludesPoint,
+  polygonIncludesPointNonZero,
+  polygonIsClosed,
   polygonSignedArea,
   simplifyConvexPolygon,
 } from "../src/polygon";
@@ -116,5 +121,97 @@ describe("simplifyConvexPolygon", () => {
     const two = square.slice(0, 2);
 
     expect(simplifyConvexPolygon(two, 0.4)).toEqual(two);
+  });
+});
+
+describe("polygon construction", () => {
+  it("closes an open polygon", () => {
+    const p = polygon(...square);
+    expect(p).toHaveLength(5);
+    expect(p[4]).toEqual([0, 0]);
+    expect(polygonIsClosed(p)).toBe(true);
+  });
+
+  it("keeps an already closed polygon as-is", () => {
+    const closed = [...square, pointFrom<GlobalPoint>(0, 0)];
+    expect(polygonFromPoints(closed)).toBe(closed);
+    expect(polygonFromPoints(square)).toHaveLength(5);
+  });
+
+  it("detects closure within a tolerance", () => {
+    const almost = [...square, pointFrom<GlobalPoint>(0.5, 0)];
+    expect(polygonIsClosed(almost)).toBe(false);
+    expect(polygonIsClosed(almost, 1)).toBe(true);
+  });
+});
+
+describe("polygonIncludesPoint", () => {
+  const p = polygon(...square);
+
+  it("includes points inside", () => {
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, 5), p)).toBe(true);
+  });
+
+  it("excludes points outside", () => {
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(15, 5), p)).toBe(false);
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, -1), p)).toBe(false);
+  });
+
+  it("uses the even-odd rule for doubly-wound polygons", () => {
+    const twice = polygon(...square, ...square);
+    expect(polygonIncludesPoint(pointFrom<GlobalPoint>(5, 5), twice)).toBe(
+      false,
+    );
+  });
+});
+
+describe("polygonIncludesPointNonZero", () => {
+  it("includes points inside, whichever way the polygon winds", () => {
+    expect(
+      polygonIncludesPointNonZero(pointFrom<GlobalPoint>(5, 5), square),
+    ).toBe(true);
+    expect(
+      polygonIncludesPointNonZero(
+        pointFrom<GlobalPoint>(5, 5),
+        [...square].reverse(),
+      ),
+    ).toBe(true);
+  });
+
+  it("excludes points outside", () => {
+    expect(
+      polygonIncludesPointNonZero(pointFrom<GlobalPoint>(15, 5), square),
+    ).toBe(false);
+    expect(
+      polygonIncludesPointNonZero(pointFrom<GlobalPoint>(5, 15), square),
+    ).toBe(false);
+  });
+
+  it("uses the non-zero rule for doubly-wound polygons", () => {
+    expect(
+      polygonIncludesPointNonZero(pointFrom<GlobalPoint>(5, 5), [
+        ...square,
+        ...square,
+      ]),
+    ).toBe(true);
+  });
+});
+
+describe("simplifyConvexPolygon turn normalization", () => {
+  it("keeps every corner of a triangle whose turns wrap past -π", () => {
+    const triangle: GlobalPoint[] = [
+      pointFrom(1, 0),
+      pointFrom(0, 0),
+      pointFrom(0, -1),
+    ];
+    expect(simplifyConvexPolygon(triangle, 0.1)).toEqual(triangle);
+  });
+  it("keeps every corner of a triangle whose turns wrap past π", () => {
+    const triangle: GlobalPoint[] = [
+      pointFrom(0, 1),
+      pointFrom(0, 0),
+      pointFrom(-1, 0),
+    ];
+    expect(simplifyConvexPolygon(triangle, 0.1)).toEqual(triangle);
   });
 });

@@ -116,7 +116,7 @@ yarn start
 | `yarn test:all` | All of the above |
 | `yarn fix` | Auto-fix formatting and lint issues |
 | `yarn build` | Production build of the app into `excalidraw-app/build` |
-| `yarn build:packages` | Build the npm packages into `packages/*/dist` |
+| `yarn build:packages` | Build the npm packages into `packages/*/dist` (all except `@excalidraw/utils`, which builds with `yarn --cwd packages/utils build:esm`) |
 
 ### Repository layout
 

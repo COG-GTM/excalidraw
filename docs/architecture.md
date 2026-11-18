@@ -57,7 +57,7 @@ Service URLs come from `.env.development` and `.env.production` at the repo root
 ## Build, test and deploy
 
 - **App.** `yarn start` runs Vite in `excalidraw-app`, on port 3001 by default (`VITE_APP_PORT` in `.env.development`). `yarn build` writes `excalidraw-app/build`, with Rollup `manualChunks` splitting locales and heavy dependencies into separate chunks.
-- **Packages.** `yarn build:packages` builds each package to `dist/` with esbuild (`scripts/buildBase.js`, `scripts/buildPackage.js`) and emits type declarations.
+- **Packages.** `yarn build:packages` builds each package except `@excalidraw/utils` to `dist/` with esbuild (`scripts/buildBase.js`, `scripts/buildPackage.js`) and emits type declarations. `@excalidraw/utils` has its own `build:esm` script (`scripts/buildUtils.js`) that the root script does not call.
 - **Checks.** `yarn test:typecheck` (tsc), `yarn test:code` (ESLint), `yarn test:other` (Prettier) and `yarn test:app` (Vitest with jsdom and `vitest-canvas-mock`). `.github/workflows/` runs these on Node 20.
 - **Deploy targets.** `vercel.json` serves `excalidraw-app/build`. The `Dockerfile` builds the app with `yarn build:app:docker` (Sentry disabled) and serves the static files from nginx on port 80; `docker-compose.yml` maps that to port 3000.
 

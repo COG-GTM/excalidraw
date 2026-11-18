@@ -1,0 +1,90 @@
+// Architecture of COG-GTM/excalidraw (master). Render with ./render.sh
+digraph excalidraw {
+  graph [rankdir=LR, fontname="DejaVu Sans", fontsize=18, nodesep=0.35, ranksep=0.7,
+         newrank=true, compound=true, pad=0.3, labelloc=t,
+         label="COG-GTM/excalidraw: runtime architecture (master)"];
+  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=15,
+         fillcolor=white, color="#555555"];
+  edge  [fontname="DejaVu Sans", fontsize=12, color="#555555"];
+
+  subgraph cluster_browser {
+    label="Browser"; style="rounded,dashed"; color="#888888"; fontsize=17;
+
+    subgraph cluster_app {
+      label="excalidraw-app/  (excalidraw.com shell, Vite + PWA)";
+      style="rounded,filled"; fillcolor="#e8f0fe"; color="#4a7bd0";
+      app      [label="App.tsx\nExcalidrawWrapper"];
+      collab   [label="collab/Collab.tsx\n+ Portal.tsx\n(socket.io, E2E encrypted)"];
+      localdata[label="data/LocalData.ts\nFileManager, tabSync"];
+      share    [label="data/index.ts + share/\nshare links  #json=id,key\nrooms  #room=id,key"];
+      ai       [label="components/AI.tsx\ntext-to-diagram,\ndiagram-to-code"];
+      plus     [label="Excalidraw+ export\n+ iframe export"];
+    }
+
+    subgraph cluster_lib {
+      label="packages/excalidraw  (@excalidraw/excalidraw, React component)";
+      style="rounded,filled"; fillcolor="#fef7e0"; color="#c99a06";
+      comp     [label="components/App.tsx\n<Excalidraw/> + LayerUI\n(pointer/keyboard handling)"];
+      actions  [label="actions/\nActionManager +\n46 action modules"];
+      render   [label="scene/Renderer +\nrenderer/ static,\ninteractive, SVG canvases"];
+      libdata  [label="data/\nrestore, json, blob,\nencryption, library, reconcile"];
+      hist     [label="history.ts\nundo/redo over\nStore deltas"];
+    }
+
+    subgraph cluster_core {
+      label="Core packages  (packages/*)";
+      style="rounded,filled"; fillcolor="#e6f4ea"; color="#34a853";
+      element  [label="@excalidraw/element\nScene, Store/delta, binding,\nlinear editor, shape (roughjs)"];
+      utils    [label="@excalidraw/utils\nexportToCanvas / Svg / Blob"];
+      math     [label="@excalidraw/math\npoints, curves, vectors"];
+      common   [label="@excalidraw/common\nconstants, utils, colors"];
+      fracidx  [label="@excalidraw/\nfractional-indexing"];
+      laser    [label="@excalidraw/\nlaser-pointer"];
+    }
+
+    subgraph cluster_storage {
+      label="Browser storage"; style="rounded,filled"; fillcolor="#f1f3f4"; color="#888888";
+      ls  [label="localStorage\nexcalidraw, excalidraw-state", shape=cylinder];
+      idb [label="IndexedDB (idb-keyval)\nfiles-db, library, TTD chats", shape=cylinder];
+    }
+  }
+
+  subgraph cluster_ext {
+    label="External services (URLs from .env.*)"; style="rounded,filled";
+    fillcolor="#fce8e6"; color="#d93025"; fontsize=17;
+    ws       [label="excalidraw-room\nsocket.io server\nVITE_APP_WS_SERVER_URL"];
+    firebase [label="Firebase\nFirestore scenes/{roomId}\nStorage /files/rooms, /files/shareLinks"];
+    json     [label="JSON backend v2\nVITE_APP_BACKEND_V2_*"];
+    aib      [label="AI backend\nVITE_APP_AI_BACKEND"];
+    libs     [label="libraries.excalidraw.com\n+ library backend"];
+    plusapp  [label="Excalidraw+\nVITE_APP_PLUS_APP"];
+  }
+
+  // app -> library
+  app -> comp [label="renders <Excalidraw/>\nvia ExcalidrawImperativeAPI", lhead=cluster_lib];
+  app -> collab; app -> localdata; app -> share; app -> ai; app -> plus;
+
+  // inside library
+  comp -> actions; comp -> render; comp -> libdata; comp -> hist;
+  libdata -> utils [style=dashed, label="export"];
+
+  // library -> core
+  actions -> element [lhead=cluster_core];
+  render -> element;
+  hist -> element;
+  comp -> laser [label="laser / trails"];
+  element -> math; element -> common; element -> fracidx;
+  math -> common;
+
+  // storage
+  localdata -> ls; localdata -> idb;
+
+  // external
+  collab -> ws [label="encrypted scene\n+ cursors"];
+  collab -> firebase [label="scene snapshot\n+ image files"];
+  share -> json [label="POST encrypted\nscene"];
+  share -> firebase [label="share-link files"];
+  ai -> aib [label="SSE streaming"];
+  libdata -> libs [label="browse /\npublish"];
+  plus -> plusapp; plus -> firebase;
+}

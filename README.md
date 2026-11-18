@@ -70,7 +70,7 @@ The Excalidraw editor (npm package) supports:
 
 ## Excalidraw.com
 
-The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](https://github.com/excalidraw/excalidraw/tree/master/excalidraw-app) is part of this repository as well, and the app features:
+The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](./excalidraw-app) is part of this repository as well, and the app features:
 
 - 📡&nbsp;PWA support (works offline).
 - 🤼&nbsp;Real-time collaboration.
@@ -82,7 +82,7 @@ We'll be adding these features as drop-in plugins for the npm package in the fut
 
 ## Quick start
 
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
+**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run this repository locally, see [Development](#development) below.
 
 Use `npm` or `yarn` to install the package.
 
@@ -93,6 +93,41 @@ yarn add react react-dom @excalidraw/excalidraw
 ```
 
 Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+
+## Development
+
+This repository is a Yarn 1 workspace monorepo (Node.js 18+; CI uses Node 20).
+
+```bash
+git clone https://github.com/COG-GTM/excalidraw.git
+cd excalidraw
+yarn
+yarn start
+```
+
+`yarn start` runs the excalidraw.com app from `excalidraw-app/` with Vite at [http://localhost:3001](http://localhost:3001) (the port is `VITE_APP_PORT` in `.env.development`). Collaboration and AI features expect local servers at the URLs in `.env.development` (an [excalidraw-room](https://github.com/excalidraw/excalidraw-room) server on port 3002 and an AI backend on port 3016).
+
+| Command | What it does |
+| --- | --- |
+| `yarn test:typecheck` | TypeScript type check |
+| `yarn test:code` | ESLint |
+| `yarn test:other` | Prettier check |
+| `yarn test:app --watch=false` | Vitest suite (`yarn test:update` also refreshes snapshots) |
+| `yarn test:all` | All of the above |
+| `yarn fix` | Auto-fix formatting and lint issues |
+| `yarn build` | Production build of the app into `excalidraw-app/build` |
+| `yarn build:packages` | Build the npm packages into `packages/*/dist` |
+
+### Repository layout
+
+- `packages/excalidraw/` — the `@excalidraw/excalidraw` React editor component.
+- `packages/element/`, `packages/math/`, `packages/common/`, `packages/utils/`, `packages/fractional-indexing/`, `packages/laser-pointer/` — the core packages the editor is built on.
+- `excalidraw-app/` — the excalidraw.com web app (collaboration, share links, local persistence, AI).
+- `examples/` — integration examples (Next.js, script in the browser).
+- `dev-docs/` — source of [docs.excalidraw.com](https://docs.excalidraw.com).
+- `firebase-project/` — Firestore and Storage rules for the app.
+
+See [docs/architecture.md](./docs/architecture.md) for how these parts fit together, with a diagram.
 
 ## Contributing
 

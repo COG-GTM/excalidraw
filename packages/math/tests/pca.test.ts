@@ -198,3 +198,17 @@ describe("kurtosis", () => {
     expect(project(rotate(points, 1.3, 2))).toBeCloseTo(project(points));
   });
 });
+
+describe("principalAxes degenerate input", () => {
+  it("reports an error for fewer than two points", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      principalAxes([pointFrom<GlobalPoint>(1, 2)]);
+      expect(error).toHaveBeenCalledWith(
+        "Degenerate point set: at least two points are required",
+      );
+    } finally {
+      error.mockRestore();
+    }
+  });
+});

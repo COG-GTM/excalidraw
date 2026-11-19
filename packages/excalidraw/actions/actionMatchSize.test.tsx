@@ -1,6 +1,10 @@
 import React from "react";
 
 import { CaptureUpdateAction } from "@excalidraw/element";
+import { pointFrom, pointRotateRads } from "@excalidraw/math";
+
+import type { LocalPoint, Radians } from "@excalidraw/math";
+import type { ExcalidrawLinearElement } from "@excalidraw/element/types";
 
 import { Excalidraw } from "../index";
 import { API } from "../tests/helpers/api";
@@ -307,5 +311,173 @@ describe("actionMatchSize", () => {
 
     expect(getElement("a").width).toBe(120);
     expect(getElement("b").height).toBe(90);
+  });
+
+  it("matches axis-aligned lines by length", () => {
+    const short = API.createElement({
+      type: "line",
+      id: "short",
+      x: 10,
+      y: 10,
+      width: 100,
+      height: 0,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(100, 0)],
+    });
+    const long = API.createElement({
+      type: "line",
+      id: "long",
+      x: 10,
+      y: 100,
+      width: 200,
+      height: 0,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(200, 0)],
+    });
+    const vertical = API.createElement({
+      type: "line",
+      id: "vertical",
+      x: 400,
+      y: 10,
+      width: 0,
+      height: 50,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(0, 50)],
+    });
+    API.setElements([short, long, vertical]);
+    API.setSelectedElements([short, long, vertical]);
+
+    act(() => {
+      h.app.actionManager.executeAction(actionMatchSize);
+    });
+
+    const resizedShort = getElement("short") as ExcalidrawLinearElement;
+    expect(resizedShort.width).toBe(200);
+    expect(resizedShort.height).toBe(0);
+    expect(resizedShort.points).toEqual([pointFrom(0, 0), pointFrom(200, 0)]);
+    expect(resizedShort.x).toBe(10);
+    expect(resizedShort.y).toBe(10);
+    // the target has no height to match, so the vertical line is unchanged
+    const resizedVertical = getElement("vertical") as ExcalidrawLinearElement;
+    expect(resizedVertical.width).toBe(0);
+    expect(resizedVertical.height).toBe(50);
+  });
+
+  it("matches vertical lines to the longest one", () => {
+    const short = API.createElement({
+      type: "line",
+      id: "short",
+      x: 10,
+      y: 10,
+      width: 0,
+      height: 40,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(0, 40)],
+    });
+    const long = API.createElement({
+      type: "line",
+      id: "long",
+      x: 100,
+      y: 10,
+      width: 0,
+      height: 120,
+      points: [pointFrom<LocalPoint>(0, 0), pointFrom<LocalPoint>(0, 120)],
+    });
+    API.setElements([short, long]);
+    API.setSelectedElements([short, long]);
+
+    act(() => {
+      h.app.actionManager.executeAction(actionMatchSize);
+    });
+
+    const resized = getElement("short") as ExcalidrawLinearElement;
+    expect(resized.width).toBe(0);
+    expect(resized.height).toBe(120);
+    expect(resized.points).toEqual([pointFrom(0, 0), pointFrom(0, 120)]);
+  });
+
+  it("keeps a rotated element's on-canvas top-left corner", () => {
+    const getTopLeft = (id: string) => {
+      const el = getElement(id);
+      return pointRotateRads(
+        pointFrom(el.x, el.y),
+        pointFrom(el.x + el.width / 2, el.y + el.height / 2),
+        el.angle,
+      );
+    };
+    const rotated = API.createElement({
+      type: "rectangle",
+      id: "rotated",
+      x: 100,
+      y: 100,
+      width: 100,
+      height: 50,
+      angle: (Math.PI / 4) as Radians,
+    });
+    const largest = API.createElement({
+      type: "rectangle",
+      id: "largest",
+      x: 500,
+      width: 200,
+      height: 150,
+    });
+    API.setElements([rotated, largest]);
+    API.setSelectedElements([rotated, largest]);
+    const [beforeX, beforeY] = getTopLeft("rotated");
+
+    act(() => {
+      h.app.actionManager.executeAction(actionMatchSize);
+    });
+
+    const [afterX, afterY] = getTopLeft("rotated");
+    expect(getElement("rotated").width).toBeCloseTo(200);
+    expect(getElement("rotated").height).toBeCloseTo(150);
+    expect(getElement("rotated").angle).toBeCloseTo(Math.PI / 4);
+    expect(afterX).toBeCloseTo(beforeX);
+    expect(afterY).toBeCloseTo(beforeY);
+  });
+
+  it("removes children a shrunken frame no longer contains", () => {
+    const frame = API.createElement({
+      type: "frame",
+      id: "frame",
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 50,
+    });
+    const inside = API.createElement({
+      type: "rectangle",
+      id: "inside",
+      x: 10,
+      y: 10,
+      width: 20,
+      height: 20,
+      frameId: frame.id,
+    });
+    const outside = API.createElement({
+      type: "rectangle",
+      id: "outside",
+      x: 300,
+      y: 10,
+      width: 20,
+      height: 20,
+      frameId: frame.id,
+    });
+    const largest = API.createElement({
+      type: "rectangle",
+      id: "largest",
+      x: 600,
+      y: 0,
+      width: 150,
+      height: 150,
+    });
+    API.setElements([inside, outside, frame, largest]);
+    API.setSelectedElements([frame, largest]);
+
+    act(() => {
+      h.app.actionManager.executeAction(actionMatchSize);
+    });
+
+    expect(getElement("frame").width).toBe(150);
+    expect(getElement("frame").height).toBe(150);
+    expect(getElement("inside").frameId).toBe("frame");
+    expect(getElement("outside").frameId).toBe(null);
   });
 });

@@ -115,6 +115,7 @@ export type ActionName =
   | "distributeVertically"
   | "flipHorizontal"
   | "flipVertical"
+  | "swapStrokeAndBackgroundColors"
   | "deselect"
   | "viewMode"
   | "exportWithDarkMode"

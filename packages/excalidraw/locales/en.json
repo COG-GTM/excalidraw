@@ -26,6 +26,7 @@
     "delete": "Delete",
     "copyStyles": "Copy styles",
     "pasteStyles": "Paste styles",
+    "swapStrokeAndBackgroundColors": "Swap stroke and background colors",
     "stroke": "Stroke",
     "changeStroke": "Change stroke color",
     "background": "Background",

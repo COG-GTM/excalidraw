@@ -171,6 +171,23 @@ describe("actionInvertSelection", () => {
       ).toBeNull();
     });
 
+    it("shows the item in the canvas context menu when something is selected", () => {
+      const rect = API.createElement({
+        id: "rect",
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+      });
+      API.setElements([rect]);
+      API.setSelectedElements([rect]);
+      mouse.rightClickAt(500, 500);
+      const contextMenu = UI.queryContextMenu();
+      expect(
+        contextMenu?.querySelector('li[data-testid="invertSelection"]'),
+      ).not.toBeNull();
+    });
+
     it("shows the item in the element context menu", () => {
       const rect = API.createElement({
         id: "rect",

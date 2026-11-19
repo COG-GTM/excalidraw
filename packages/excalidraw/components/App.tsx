@@ -13663,6 +13663,7 @@ class App extends React.Component<AppProps, AppState> {
         copyText,
         CONTEXT_MENU_SEPARATOR,
         actionSelectAll,
+        actionInvertSelection,
         actionUnlockAllElements,
         CONTEXT_MENU_SEPARATOR,
         actionToggleGridMode,

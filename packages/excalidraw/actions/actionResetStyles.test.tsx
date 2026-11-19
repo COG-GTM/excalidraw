@@ -1,4 +1,4 @@
-import { queryByTestId } from "@testing-library/react";
+import { fireEvent, queryByTestId } from "@testing-library/react";
 import React from "react";
 
 import { DEFAULT_ELEMENT_PROPS, FONT_FAMILY } from "@excalidraw/common";
@@ -6,7 +6,7 @@ import { CaptureUpdateAction } from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 
-import { Excalidraw } from "../index";
+import { CommandPalette, Excalidraw } from "../index";
 import { API } from "../tests/helpers/api";
 import { Keyboard, Pointer, UI } from "../tests/helpers/ui";
 import { act, render } from "../tests/test-utils";
@@ -236,5 +236,77 @@ describe("actionResetStyles", () => {
 
     expect(pickStyles(getElement("rect"))).toEqual(customStyles);
     expect(pickStyles(getElement("ellipse"))).toEqual(customStyles);
+  });
+});
+
+describe("actionResetStyles in the command palette", () => {
+  beforeEach(async () => {
+    await render(
+      <Excalidraw handleKeyboardGlobally={true}>
+        <CommandPalette />
+      </Excalidraw>,
+    );
+  });
+
+  const openPaletteAndSearch = (query: string) => {
+    act(() => {
+      Keyboard.withModifierKeys({ ctrl: true }, () => {
+        Keyboard.keyDown("/");
+      });
+    });
+    const input = document.querySelector(
+      ".command-palette-dialog input",
+    ) as HTMLInputElement;
+    expect(input).not.toBeNull();
+    fireEvent.change(input, { target: { value: query } });
+    return Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".command-palette-dialog .command-item",
+      ),
+    ).find((item) => item.textContent?.includes("Reset styles"));
+  };
+
+  it("resets styles the same as the context menu", () => {
+    const rect = API.createElement({
+      type: "rectangle",
+      id: "rect",
+      ...customStyles,
+    });
+    const text = API.createElement({
+      type: "text",
+      id: "text",
+      text: "label",
+      containerId: "rect",
+      ...customStyles,
+    });
+    API.setElements([
+      { ...rect, boundElements: [{ type: "text", id: "text" }] },
+      text,
+    ]);
+    API.setSelectedElements([rect]);
+    const { x, y, width, height } = getElement("rect");
+
+    const item = openPaletteAndSearch("Reset styles");
+    expect(item).toBeDefined();
+    expect(item!.classList.contains("item-disabled")).toBe(false);
+    fireEvent.click(item!);
+
+    expect(pickStyles(getElement("rect"))).toEqual(defaultStyles);
+    expect(pickStyles(getElement("text"))).toEqual(defaultStyles);
+    expect(getElement("rect")).toMatchObject({ x, y, width, height });
+    expect(h.state.openDialog).toBeNull();
+  });
+
+  it("is not available when nothing is selected", () => {
+    API.setElements([
+      API.createElement({ type: "rectangle", id: "rect", ...customStyles }),
+    ]);
+
+    const item = openPaletteAndSearch("Reset styles");
+
+    expect(item === undefined || item.classList.contains("item-disabled")).toBe(
+      true,
+    );
+    expect(pickStyles(getElement("rect"))).toEqual(customStyles);
   });
 });

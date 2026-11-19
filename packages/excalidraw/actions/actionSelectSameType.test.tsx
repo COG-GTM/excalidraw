@@ -24,8 +24,7 @@ const idsOf = (...elements: ExcalidrawElement[]) =>
 const getLabel = () =>
   (actionSelectSameType.label as Function)(h.elements, h.state, h.app);
 
-const isVisible = () =>
-  actionSelectSameType.predicate(h.elements, h.state);
+const isVisible = () => actionSelectSameType.predicate(h.elements, h.state);
 
 describe("actionSelectSameType", () => {
   beforeEach(async () => {

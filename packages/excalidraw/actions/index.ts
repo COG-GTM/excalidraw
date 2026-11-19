@@ -68,6 +68,7 @@ export {
 } from "./actionDistribute";
 
 export { actionFlipHorizontal, actionFlipVertical } from "./actionFlip";
+export { actionRotate90Clockwise } from "./actionRotate";
 
 export {
   actionCopy,

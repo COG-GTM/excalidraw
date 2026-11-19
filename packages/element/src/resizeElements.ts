@@ -411,13 +411,37 @@ const rotateMultipleElements = (
   centerX: number,
   centerY: number,
 ) => {
-  const elementsMap = scene.getNonDeletedElementsMap();
   let centerAngle =
     (5 * Math.PI) / 2 + Math.atan2(pointerY - centerY, pointerX - centerX);
   if (shouldRotateWithDiscreteAngle) {
     centerAngle += SHIFT_LOCKING_ANGLE / 2;
     centerAngle -= centerAngle % SHIFT_LOCKING_ANGLE;
   }
+
+  rotateElementsAroundPoint(
+    elements,
+    scene,
+    centerAngle as Radians,
+    pointFrom<GlobalPoint>(centerX, centerY),
+    originalElements,
+  );
+};
+
+/**
+ * Rotates elements by `angle` around `center`. Element angles are set to
+ * the original angle (from `originalElements`, falling back to the current
+ * angle) plus `angle`.
+ */
+export const rotateElementsAroundPoint = (
+  elements: readonly NonDeletedExcalidrawElement[],
+  scene: Scene,
+  angle: Radians,
+  center: GlobalPoint,
+  originalElements?: PointerDownState["originalElements"],
+) => {
+  const elementsMap = scene.getNonDeletedElementsMap();
+  const [centerX, centerY] = center;
+  const centerAngle = angle;
 
   const rotatedElementsMap = new Map<
     ExcalidrawElement["id"],
@@ -430,7 +454,7 @@ const rotateMultipleElements = (
       const cx = (x1 + x2) / 2;
       const cy = (y1 + y2) / 2;
       const origAngle =
-        originalElements.get(element.id)?.angle ?? element.angle;
+        originalElements?.get(element.id)?.angle ?? element.angle;
       const [rotatedCX, rotatedCY] = pointRotateRads(
         pointFrom(cx, cy),
         pointFrom(centerX, centerY),

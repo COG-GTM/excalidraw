@@ -68,6 +68,7 @@ export {
 } from "./actionDistribute";
 
 export { actionFlipHorizontal, actionFlipVertical } from "./actionFlip";
+export { actionMatchSize } from "./actionMatchSize";
 
 export {
   actionCopy,

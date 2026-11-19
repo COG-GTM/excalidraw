@@ -56,6 +56,7 @@ export type ActionName =
   | "copyStyles"
   | "selectAll"
   | "pasteStyles"
+  | "resetStyles"
   | "gridMode"
   | "zenMode"
   | "objectsSnapMode"

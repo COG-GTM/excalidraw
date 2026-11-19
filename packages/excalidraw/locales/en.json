@@ -26,6 +26,7 @@
     "delete": "Delete",
     "copyStyles": "Copy styles",
     "pasteStyles": "Paste styles",
+    "resetStyles": "Reset styles",
     "stroke": "Stroke",
     "changeStroke": "Change stroke color",
     "background": "Background",

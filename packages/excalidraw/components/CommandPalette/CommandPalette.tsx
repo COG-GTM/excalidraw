@@ -328,6 +328,7 @@ function CommandPaletteInner({
         actionManager.actions.duplicateSelection,
         actionManager.actions.flipHorizontal,
         actionManager.actions.flipVertical,
+        actionManager.actions.matchSize,
         actionManager.actions.zoomToFitSelection,
         actionManager.actions.zoomToFitSelectionInViewport,
         actionManager.actions.increaseFontSize,

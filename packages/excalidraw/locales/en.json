@@ -130,6 +130,7 @@
     "distributeVertically": "Distribute vertically",
     "flipHorizontal": "Flip horizontal",
     "flipVertical": "Flip vertical",
+    "matchSize": "Match size",
     "viewMode": "View mode",
     "share": "Share",
     "showStroke": "Show stroke color picker",

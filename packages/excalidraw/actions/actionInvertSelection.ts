@@ -67,18 +67,43 @@ export const actionInvertSelection = register({
         ? app.scene.getNonDeletedElementsMap().get(selectedIdsList[0])
         : undefined;
 
+    const groupSelection = selectGroupsForSelectedElements(
+      {
+        editingGroupId: null,
+        selectedElementIds,
+      },
+      getNonDeletedElements(elements),
+      appState,
+      app,
+    );
+
+    // expanding to whole groups can pull in individually locked members
+    const elementsMap = arrayToMap(elements);
+    const isLockedOrInLockedContainer = (id: string) => {
+      const element = elementsMap.get(id);
+      if (!element) {
+        return false;
+      }
+      if (element.locked) {
+        return true;
+      }
+      const container =
+        isTextElement(element) && element.containerId
+          ? elementsMap.get(element.containerId)
+          : undefined;
+      return !!container?.locked;
+    };
+    const unlockedSelectedElementIds = Object.fromEntries(
+      Object.entries(groupSelection.selectedElementIds).filter(
+        ([id, selected]) => selected && !isLockedOrInLockedContainer(id),
+      ),
+    ) as typeof groupSelection.selectedElementIds;
+
     return {
       appState: {
         ...appState,
-        ...selectGroupsForSelectedElements(
-          {
-            editingGroupId: null,
-            selectedElementIds,
-          },
-          getNonDeletedElements(elements),
-          appState,
-          app,
-        ),
+        ...groupSelection,
+        selectedElementIds: unlockedSelectedElementIds,
         selectedLinearElement:
           singleSelectedElement && isLinearElement(singleSelectedElement)
             ? new LinearElementEditor(

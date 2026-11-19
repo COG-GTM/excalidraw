@@ -95,6 +95,25 @@ describe("actionInvertSelection", () => {
     expect(selectedIds()).toEqual(["free"]);
   });
 
+  it("never selects a locked member of an unselected group", () => {
+    const selected = API.createElement({ id: "selected" });
+    const lockedMember = API.createElement({
+      id: "lockedMember",
+      groupIds: ["group"],
+      locked: true,
+    });
+    const freeMember = API.createElement({
+      id: "freeMember",
+      groupIds: ["group"],
+    });
+    API.setElements([selected, lockedMember, freeMember]);
+    API.setSelectedElements([selected]);
+
+    API.executeAction(actionInvertSelection);
+
+    expect(selectedIds()).toEqual(["freeMember"]);
+  });
+
   it("does not select bound text directly; it follows its container", () => {
     const container = API.createElement({
       type: "rectangle",

@@ -35,6 +35,7 @@ export {
 
 export { actionFinalize } from "./actionFinalize";
 export { actionDeselect } from "./actionDeselect";
+export { actionCopyAsJson } from "./actionCopyAsJson";
 
 export {
   actionChangeProjectName,

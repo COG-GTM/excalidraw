@@ -79,6 +79,7 @@
   },
   "dependencies": {
     "@braintree/sanitize-url": "6.0.2",
+    "lodash": "*",
     "@codemirror/commands": "^6.0.0",
     "@codemirror/language": "^6.0.0",
     "@codemirror/state": "^6.0.0",

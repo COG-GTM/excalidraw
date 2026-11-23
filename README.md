@@ -82,7 +82,7 @@ We'll be adding these features as drop-in plugins for the npm package in the fut
 
 ## Quick start
 
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
+**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run this repository locally, see [Development](#development) below.
 
 Use `npm` or `yarn` to install the package.
 
@@ -93,6 +93,19 @@ yarn add react react-dom @excalidraw/excalidraw
 ```
 
 Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+
+## Development
+
+Requires [Node.js](https://nodejs.org/en/) 18+, [Yarn](https://classic.yarnpkg.com/en/docs/install) 1.x and [Git](https://git-scm.com/downloads).
+
+```bash
+git clone https://github.com/COG-GTM/excalidraw.git
+cd excalidraw
+yarn
+yarn start
+```
+
+`yarn start` serves the excalidraw.com app from `excalidraw-app/` at [http://localhost:3001](http://localhost:3001) (the port is `VITE_APP_PORT` in `.env.development`). See the [Development Guide](./dev-docs/docs/introduction/development.mdx) for tests, formatting and Docker.
 
 ## Contributing
 

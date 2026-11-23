@@ -2,7 +2,7 @@
 
 ## Code Sandbox
 
-- Go to https://codesandbox.io/p/github/excalidraw/excalidraw
+- Go to https://codesandbox.io/p/github/COG-GTM/excalidraw
   - You may need to sign in with GitHub and reload the page
 - You can start coding instantly, and even send PRs from there!
 
@@ -12,7 +12,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Requirements
 
-- [Node.js](https://nodejs.org/en/)
+- [Node.js](https://nodejs.org/en/) 20 or newer (`yarn` fails on Node 18 because a dependency requires Node 20+)
 - [Yarn](https://yarnpkg.com/getting-started/install) (v1 or v2.4.2+)
 - [Git](https://git-scm.com/downloads)
 
@@ -92,6 +92,12 @@ You can use docker-compose to work on Excalidraw locally if you don't want to se
 ```bash
 docker-compose up --build -d
 ```
+
+:::caution
+
+This build currently fails: `docker-compose.yml` builds with `NODE_ENV=development`, and the PWA plugin rejects the resulting bundle for exceeding its 2 MiB precache limit. Use the [self-hosting](#self-hosting) image below instead until this is fixed.
+
+:::
 
 ## Self-hosting
 

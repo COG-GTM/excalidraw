@@ -96,7 +96,7 @@ Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excal
 
 ## Development
 
-Requires [Node.js](https://nodejs.org/en/) 18+, [Yarn](https://classic.yarnpkg.com/en/docs/install) 1.x and [Git](https://git-scm.com/downloads).
+Requires [Node.js](https://nodejs.org/en/) 20+, [Yarn](https://classic.yarnpkg.com/en/docs/install) 1.x and [Git](https://git-scm.com/downloads).
 
 ```bash
 git clone https://github.com/COG-GTM/excalidraw.git

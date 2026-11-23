@@ -13,7 +13,7 @@ ARG NODE_ENV=production
 
 RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
-FROM nginx:stable-alpine-slim@sha256:2c605dbeab79a6b2a63340474fe58119d0ef95bdc4b1f41df0aa689659b3d13b
+FROM nginx:1.30.8-alpine-slim@sha256:246365fc0490ad3b237cf97e3415e573d203107a0279c06cd03233d96ebac99c
 
 COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
 

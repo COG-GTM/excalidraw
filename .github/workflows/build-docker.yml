@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - release
+  pull_request:
+    paths:
+      - Dockerfile
+      - scripts/check-nginx-version.sh
+      - .github/workflows/build-docker.yml
 
 jobs:
   build-docker:
@@ -11,3 +16,5 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - run: docker build -t excalidraw .
+      - name: Check nginx version
+        run: ./scripts/check-nginx-version.sh excalidraw

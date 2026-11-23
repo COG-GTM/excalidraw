@@ -13,7 +13,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Requirements
 
 - [Node.js](https://nodejs.org/en/) 20 or newer (`yarn` fails on Node 18 because a dependency requires Node 20+)
-- [Yarn](https://yarnpkg.com/getting-started/install) (v1 or v2.4.2+)
+- [Yarn](https://classic.yarnpkg.com/en/docs/install) 1.x (the repo pins `yarn@1.22.22` in `package.json`)
 - [Git](https://git-scm.com/downloads)
 
 ### Clone the repo
@@ -95,7 +95,7 @@ docker-compose up --build -d
 
 :::caution
 
-This build currently fails: `docker-compose.yml` builds with `NODE_ENV=development`, and the PWA plugin rejects the resulting bundle for exceeding its 2 MiB precache limit. Use the [self-hosting](#self-hosting) image below instead until this is fixed.
+This build currently fails: `docker-compose.yml` builds with `NODE_ENV=development`, and the PWA plugin rejects the resulting bundle for exceeding its 2.3 MiB precache limit (`maximumFileSizeToCacheInBytes` in `excalidraw-app/vite.config.mts`). Use the [self-hosting](#self-hosting) image below instead until this is fixed.
 
 :::
 

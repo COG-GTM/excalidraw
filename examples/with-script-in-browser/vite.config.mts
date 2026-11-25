@@ -6,6 +6,8 @@ export default defineConfig({
     port: 3001,
     // open the browser
     open: true,
+    // CodeSandbox previews are served from *.csb.app
+    allowedHosts: [".csb.app"],
   },
   publicDir: "public",
   optimizeDeps: {

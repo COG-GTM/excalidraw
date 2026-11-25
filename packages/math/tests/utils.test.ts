@@ -99,8 +99,9 @@ describe("isFiniteNumber", () => {
 
 describe("isCloseTo", () => {
   it("uses PRECISION as the default tolerance", () => {
-    expect(isCloseTo(1, 1 + 1e-5)).toBe(true);
-    expect(isCloseTo(1, 1.01)).toBe(false);
+    expect(isCloseTo(0, 0.00005)).toBe(true);
+    expect(isCloseTo(0, 0.0002)).toBe(false);
+    expect(isCloseTo(0, -0.0002)).toBe(false);
   });
 
   it("uses a strict comparison against the tolerance", () => {

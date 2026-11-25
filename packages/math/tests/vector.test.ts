@@ -115,11 +115,20 @@ describe("vectorAdd / vectorSubtract", () => {
     expect(vectorSubtract(vector(1, 2), vector(3, -5))).toEqual([-2, 7]);
   });
 
-  it("does not mutate the inputs", () => {
+  it("does not mutate the inputs when adding", () => {
     const a = vector(1, 2);
     const b = vector(3, 4);
 
     vectorAdd(a, b);
+
+    expect(a).toEqual([1, 2]);
+    expect(b).toEqual([3, 4]);
+  });
+
+  it("does not mutate the inputs when subtracting", () => {
+    const a = vector(1, 2);
+    const b = vector(3, 4);
+
     vectorSubtract(a, b);
 
     expect(a).toEqual([1, 2]);

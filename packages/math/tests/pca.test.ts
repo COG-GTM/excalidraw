@@ -10,7 +10,7 @@ import {
 } from "../src/pca";
 import { pointFrom } from "../src/point";
 
-import type { GlobalPoint } from "../src/types";
+import type { GlobalPoint, Vector } from "../src/types";
 
 const rotate = (points: GlobalPoint[], angle: number, scale = 1) =>
   points.map(([x, y]) =>
@@ -73,6 +73,52 @@ describe("principalAxes", () => {
     ]);
 
     expect(axes.major).toEqual([0, 1]);
+  });
+
+  it("uses the x axis when a diagonal covariance spreads more along x", () => {
+    const axes = principalAxes([
+      pointFrom<GlobalPoint>(-5, 0),
+      pointFrom<GlobalPoint>(5, 0),
+      pointFrom<GlobalPoint>(0, -1),
+      pointFrom<GlobalPoint>(0, 1),
+    ]);
+
+    expect(axes.major).toEqual([1, 0]);
+    expect(axes.majorVariance).toBeCloseTo(12.5);
+    expect(axes.minorVariance).toBeCloseTo(0.5);
+  });
+
+  it("reports and degrades gracefully for a single point", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      const axes = principalAxes([pointFrom<GlobalPoint>(3, 4)]);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toMatch(/at least two points/);
+      expect(axes.centroid).toEqual([3, 4]);
+      expect(axes.majorVariance).toBe(0);
+      expect(axes.minorVariance).toBe(0);
+      expect(axes.major).toEqual([1, 0]);
+      expect(axes.minor).toEqual([0, -1]);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("does not report two or more points", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      principalAxes([
+        pointFrom<GlobalPoint>(0, 0),
+        pointFrom<GlobalPoint>(1, 1),
+      ]);
+
+      expect(errorSpy).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });
 
@@ -147,6 +193,32 @@ describe("elongation", () => {
     expect(elongation(principalAxes(rotate(points, 0.9, 7)))).toBeCloseTo(
       elongation(principalAxes(points)),
     );
+  });
+});
+
+describe("elongation with no variance", () => {
+  it("is 1 when the major variance is 0", () => {
+    expect(
+      elongation({
+        centroid: pointFrom<GlobalPoint>(0, 0),
+        major: [1, 0] as Vector,
+        minor: [0, -1] as Vector,
+        majorVariance: 0,
+        minorVariance: 0,
+      }),
+    ).toBe(1);
+  });
+
+  it("is 1 for coincident points", () => {
+    expect(
+      elongation(
+        principalAxes([
+          pointFrom<GlobalPoint>(2, 2),
+          pointFrom<GlobalPoint>(2, 2),
+          pointFrom<GlobalPoint>(2, 2),
+        ]),
+      ),
+    ).toBe(1);
   });
 });
 
